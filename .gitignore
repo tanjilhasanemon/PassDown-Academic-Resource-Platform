@@ -1,0 +1,32 @@
+# Environment variables & secrets (SRS NFR-04)
+.env
+.env.local
+.env.*.local
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Node / React / Vite
+node_modules/
+dist/
+build/
+.vite/
+*.log
+
+# Documentation builds
+docs/build/
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

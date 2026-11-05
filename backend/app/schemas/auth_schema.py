@@ -1,8 +1,9 @@
-"""Authentication & User Profile Pydantic Schemas (ECB Boundary Layer).
+"""Authentication, JWT Session & User Profile Pydantic Schemas (ECB Boundary Layer).
 
-Implements input validation and safe response serialization for FR-01:
-- Validates email format, non-empty trimmed name, and password minimum length.
-- Explicitly excludes `password_hash` from UserRead responses (SRS NFR-01).
+Implements input validation and safe response serialization for FR-01 and FR-02:
+- Validates registration and login payloads.
+- Serializes signed JWT session responses with role, scopes, and expiry metadata.
+- Explicitly excludes `password_hash` from all responses (SRS NFR-01).
 """
 
 from datetime import datetime
@@ -47,6 +48,21 @@ class UserRegisterRequest(BaseModel):
         return trimmed
 
 
+class LoginRequest(BaseModel):
+    """Request payload schema for JSON user authentication (FR-02)."""
+
+    email: EmailStr = Field(
+        ...,
+        description="Registered university email address.",
+    )
+    password: str = Field(
+        ...,
+        min_length=1,
+        max_length=128,
+        description="Account password.",
+    )
+
+
 class UserRead(BaseModel):
     """Safe user profile response schema for /auth/register and /auth/me (FR-01).
 
@@ -60,3 +76,41 @@ class UserRead(BaseModel):
     email: EmailStr
     role: str
     created_at: datetime
+
+
+class TokenResponse(BaseModel):
+    """Response schema returned upon successful authentication at /auth/login (FR-02)."""
+
+    access_token: str = Field(
+        ...,
+        description="Signed expiring JWT containing sub, role, scopes, and exp.",
+    )
+    token_type: str = Field(
+        default="bearer",
+        description="OAuth2 token scheme ('bearer').",
+    )
+    expires_in: int = Field(
+        ...,
+        description="Token validity lifetime in seconds.",
+    )
+    role: str = Field(
+        ...,
+        description="Authenticated user role ('student' or 'admin').",
+    )
+    scopes: list[str] = Field(
+        ...,
+        description="Fine-grained security scopes granted to the session.",
+    )
+    user: UserRead = Field(
+        ...,
+        description="Safe user profile of the authenticated account.",
+    )
+
+
+class ScopeCheckResponse(BaseModel):
+    """Response schema confirming that a protected security scope check succeeded."""
+
+    authorized: bool
+    user_id: int
+    role: str
+    verified_scope: str

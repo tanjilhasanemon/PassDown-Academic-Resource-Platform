@@ -1,4 +1,4 @@
-"""PassDown FastAPI Entrypoint (Boundary Layer).
+"""PassDown FastAPI Entrypoint (ECB Boundary Layer).
 
 Configures CORS (SRS NFR-04) and mounts `/api/v1` routers.
 """
@@ -6,19 +6,24 @@ Configures CORS (SRS NFR-04) and mounts `/api/v1` routers.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.config import settings
+from app.routers.auth_router import router as auth_router
+
 app = FastAPI(
-    title="PassDown API",
+    title=settings.PROJECT_NAME,
     description="Academic Resource-Sharing Platform REST API (SRS v1.0)",
     version="1.0.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/api/v1/health", tags=["Health"])

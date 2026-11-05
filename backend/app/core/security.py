@@ -8,6 +8,7 @@ Enforces PassDown SRS §3.4, FR-01, FR-02, NFR-01, NFR-02, and NFR-03:
 
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
 import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
@@ -16,8 +17,6 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.user import User
-from app.repositories.user_repo import UserRepository
 
 ROLE_ADMIN = "admin"
 ROLE_STUDENT = "student"
@@ -129,7 +128,7 @@ def get_current_user(
     security_scopes: SecurityScopes,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
-) -> User:
+) -> Any:
     """Validates the Bearer JWT and enforces required FastAPI SecurityScopes.
 
     Returns 401 Unauthorized when the token is missing, malformed, or expired,
@@ -147,6 +146,8 @@ def get_current_user(
     Returns:
         User: Authenticated SQLAlchemy User entity.
     """
+    from app.repositories.user_repo import UserRepository
+
     authenticate_value = (
         f'Bearer scope="{security_scopes.scope_str}"'
         if security_scopes.scopes
@@ -191,9 +192,7 @@ def get_current_user(
     for required_scope in security_scopes.scopes:
         if required_scope not in token_scopes:
             raise HTTPException(
-                status_code=status.HTTP_403_BIDDEN
-                if hasattr(status, "HTTP_403_BIDDEN")
-                else status.HTTP_403_FORBIDDEN,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied – you do not have the required permissions to perform this action.",
                 headers={"WWW-Authenticate": authenticate_value},
             )

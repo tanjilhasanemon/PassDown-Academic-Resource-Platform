@@ -4,6 +4,7 @@ Implements the User entity specified in PassDown SRS §3.3.3, FR-01, and NFR-10.
 """
 
 from datetime import datetime, timezone
+
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 

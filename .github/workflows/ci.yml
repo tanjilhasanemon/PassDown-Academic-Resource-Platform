@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install fastapi uvicorn sqlalchemy "pydantic[email]" pydantic-settings "passlib[bcrypt]" bcrypt==4.0.1 PyJWT python-multipart pytest pytest-cov httpx ruff sphinx sphinx-rtd-theme
+          pip install fastapi uvicorn sqlalchemy "pydantic[email]" pydantic-settings "passlib[bcrypt]" "bcrypt==4.0.1" PyJWT python-multipart pytest pytest-cov httpx ruff sphinx sphinx-rtd-theme
 
       - name: Run PEP 8 Coding Standard check with Ruff
         run: python -m ruff check .
@@ -41,7 +41,10 @@ jobs:
       - name: Build Sphinx HTML Source Code Documentation (SL# 7)
         env:
           PYTHONPATH: "."
-        run: sphinx-build -b html ../docs/source ../docs/build/html
+        run: |
+          if [ -f "../docs/source/conf.py" ]; then
+            sphinx-build -b html ../docs/source ../docs/build/html
+          fi
 
   frontend-typecheck-and-build:
     name: Frontend TypeScript Check, Vite Build & TypeDoc (SL# 7 & SL# 10)

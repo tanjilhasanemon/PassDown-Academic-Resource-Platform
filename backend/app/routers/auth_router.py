@@ -13,8 +13,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import (
-    ROLE_SCOPES,
     ROLE_ADMIN,
+    ROLE_SCOPES,
     SCOPE_CONTRIBUTIONS_MODERATE,
     SCOPE_CONTRIBUTIONS_WRITE,
     SCOPE_COURSES_WRITE,
@@ -34,6 +34,7 @@ from app.services.auth_service import AuthService
 router = APIRouter(prefix="/auth", tags=["Authentication & Profile (FR-01, FR-02)"])
 
 ALL_DEFINED_SCOPES = set(ROLE_SCOPES[ROLE_ADMIN])
+db_session_dependency = Depends(get_db)
 
 
 @router.post(
@@ -44,7 +45,7 @@ ALL_DEFINED_SCOPES = set(ROLE_SCOPES[ROLE_ADMIN])
 )
 def register_user(
     payload: UserRegisterRequest,
-    db: Session = Depends(get_db),
+    db: Session = db_session_dependency,
 ) -> UserRead:
     """Registers a prospective student and returns the safe profile without password_hash."""
     user = AuthService.register_student(db, payload)
@@ -59,7 +60,7 @@ def register_user(
 )
 async def login_user(
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = db_session_dependency,
 ) -> TokenResponse:
     """Authenticates a registered Student or Admin and returns a signed JWT.
 

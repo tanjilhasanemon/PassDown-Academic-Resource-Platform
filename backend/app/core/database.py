@@ -5,6 +5,7 @@ in compliance with PassDown SRS §2.1 and §3.3.3.
 """
 
 from collections.abc import Generator
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 

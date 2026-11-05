@@ -6,12 +6,13 @@ Enforces PassDown SRS §3.4, FR-01, FR-02, NFR-01, NFR-02, and NFR-03:
 - Enforces FastAPI SecurityScopes for role-based and scope-based access control.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
+
 import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-import jwt
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -55,6 +56,7 @@ oauth2_scheme = OAuth2PasswordBearer(
     },
     auto_error=False,
 )
+db_session_dependency = Depends(get_db)
 
 
 def hash_password(plain_password: str) -> str:
@@ -106,7 +108,7 @@ def create_access_token(
     Returns:
         str: Encoded HS256 JWT string.
     """
-    expire = datetime.now(timezone.utc) + (
+    expire = datetime.now(UTC) + (
         expires_delta
         if expires_delta is not None
         else timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
@@ -128,7 +130,7 @@ def create_access_token(
 def get_current_user(
     security_scopes: SecurityScopes,
     token: str | None = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
+    db: Session = db_session_dependency,
 ) -> User:
     """Validates the Bearer JWT and enforces required FastAPI SecurityScopes.
 

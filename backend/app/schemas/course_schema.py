@@ -6,6 +6,7 @@ course's public resource sections (`core-materials`, `contributions`, `requests`
 """
 
 from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 

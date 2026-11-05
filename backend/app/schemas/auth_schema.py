@@ -7,6 +7,7 @@ Implements input validation and safe response serialization for FR-01 and FR-02:
 """
 
 from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 

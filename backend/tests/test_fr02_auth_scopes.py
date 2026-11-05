@@ -13,8 +13,9 @@ Covers all confirmation criteria for FR-02 in PassDown SRS §3.1, §3.4, NFR-02,
 """
 
 from datetime import timedelta
-from fastapi.testclient import TestClient
+
 import jwt
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings

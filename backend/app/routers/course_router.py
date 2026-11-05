@@ -13,6 +13,7 @@ from app.schemas.course_schema import CourseDetailRead, CourseRead
 from app.services.course_service import CourseService
 
 router = APIRouter(prefix="/courses", tags=["Courses (FR-03, FR-04)"])
+db_session_dependency = Depends(get_db)
 
 
 @router.get(
@@ -27,7 +28,7 @@ def list_courses(
         max_length=120,
         description="Optional case-insensitive search term matching course code or title.",
     ),
-    db: Session = Depends(get_db),
+    db: Session = db_session_dependency,
 ) -> list[CourseRead]:
     """Returns the public course catalogue, optionally filtered by `?search=`."""
     return CourseService.list_public_courses(db, search=search)
@@ -41,7 +42,7 @@ def list_courses(
 )
 def get_course_by_id(
     course_id: int,
-    db: Session = Depends(get_db),
+    db: Session = db_session_dependency,
 ) -> CourseDetailRead:
     """Returns full metadata and resource navigation links for a course, or 404."""
     return CourseService.get_course_detail(db, course_id=course_id)

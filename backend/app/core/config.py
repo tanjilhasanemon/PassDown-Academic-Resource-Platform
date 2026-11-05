@@ -17,7 +17,7 @@ class Settings:
         JWT_SECRET (str): Secret key used to sign and verify JWT tokens.
         JWT_ALGORITHM (str): Cryptographic signing algorithm for JWTs.
         JWT_EXPIRE_MINUTES (int): Token expiration window in minutes.
-        CORS_ORIGINS (list[str]): Permitted frontend origins for CORS middleware.
+        CORS_ORIGINS (tuple[str, ...]): Permitted frontend origins for CORS middleware.
     """
 
     PROJECT_NAME: str = "PassDown API"
@@ -28,11 +28,11 @@ class Settings:
     )
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
-    CORS_ORIGINS: list[str] = [
+    CORS_ORIGINS: tuple[str, ...] = tuple(
         origin.strip()
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
         if origin.strip()
-    ]
+    )
 
 
 settings = Settings()

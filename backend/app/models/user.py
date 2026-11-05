@@ -8,7 +8,6 @@ from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
-from app.core.security import ROLE_STUDENT
 
 
 class User(Base):
@@ -32,7 +31,7 @@ class User(Base):
     )
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=ROLE_STUDENT
+        String(32), nullable=False, default="student"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

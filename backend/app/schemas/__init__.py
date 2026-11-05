@@ -10,8 +10,16 @@ from app.schemas.auth_schema import (
     UserRead,
     UserRegisterRequest,
 )
+from app.schemas.course_schema import (
+    CourseDetailRead,
+    CourseRead,
+    CourseResourceLinks,
+)
 
 __all__ = [
+    "CourseDetailRead",
+    "CourseRead",
+    "CourseResourceLinks",
     "LoginRequest",
     "ScopeCheckResponse",
     "TokenResponse",

@@ -3,6 +3,18 @@
 Exports validated DTO schemas for PassDown REST API endpoints.
 """
 
-from app.schemas.auth_schema import UserRead, UserRegisterRequest
+from app.schemas.auth_schema import (
+    LoginRequest,
+    ScopeCheckResponse,
+    TokenResponse,
+    UserRead,
+    UserRegisterRequest,
+)
 
-__all__ = ["UserRead", "UserRegisterRequest"]
+__all__ = [
+    "LoginRequest",
+    "ScopeCheckResponse",
+    "TokenResponse",
+    "UserRead",
+    "UserRegisterRequest",
+]

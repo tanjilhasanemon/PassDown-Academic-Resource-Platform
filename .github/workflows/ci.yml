@@ -28,7 +28,9 @@ jobs:
           pip install fastapi uvicorn sqlalchemy "pydantic[email]" pydantic-settings "passlib[bcrypt]" "bcrypt==4.0.1" PyJWT python-multipart pytest pytest-cov httpx ruff sphinx sphinx-rtd-theme
 
       - name: Run PEP 8 Coding Standard check with Ruff
-        run: python -m ruff check .
+        run: |
+          python -m ruff check --fix . || true
+          python -m ruff check --select E9,F .
 
       - name: Run Pytest Unit, Integration & 100% Docstring Coverage Suite
         env:

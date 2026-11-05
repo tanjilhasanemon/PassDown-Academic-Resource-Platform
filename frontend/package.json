@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
-    "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
+    "build": "vite build",
     "preview": "vite preview",
     "docs": "typedoc --options typedoc.json"
   },

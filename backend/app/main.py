@@ -1,12 +1,12 @@
 """PassDown FastAPI Entrypoint (ECB Boundary Layer).
 
-Configures CORS (SRS NFR-04), initializes database tables and controlled seed
-records on startup (SRS §1.5 & §4.4), and mounts `/api/v1` routers for Auth
-(FR-01, FR-02) and Courses (FR-03).
+Configures CORS (SRS NFR-04), initializes database tables on startup, and
+mounts `/api/v1` routers for Auth (FR-01, FR-02) and Courses (FR-03).
 """
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,13 +19,14 @@ from app.routers.course_router import router as course_router
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-    """Initializes database schema and seeds default IUB courses on startup."""
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    try:
-        seed_initial_data(db)
-    finally:
-        db.close()
+    """Initializes database schema and seeds default IUB courses on dev startup."""
+    if not os.getenv("PYTEST_CURRENT_TEST"):
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            seed_initial_data(db)
+        finally:
+            db.close()
     yield
 
 

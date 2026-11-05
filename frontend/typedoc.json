@@ -1,5 +1,11 @@
 {
-  "entryPoints": ["src/types/api.ts", "src/services/apiClient.ts", "src/context/AuthContext.tsx"],
+  "entryPoints": [
+    "src/types/api.ts",
+    "src/services/apiClient.ts",
+    "src/context/AuthContext.tsx",
+    "src/App.tsx"
+  ],
+  "tsconfig": "./tsconfig.json",
   "out": "../docs/frontend-docs",
   "name": "PassDown Frontend (React + TypeScript Boundary Layer)"
 }

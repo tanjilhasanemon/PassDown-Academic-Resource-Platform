@@ -94,3 +94,12 @@ export interface ResourceRequest {
   status: string;
   created_at: string;
 }
+
+/** Public request fields returned by `GET /api/v1/courses/{id}/requests` (FR-11). */
+export interface PublicResourceRequest {
+  id: number;
+  description: string;
+  status: string;
+  author_name: string;
+  created_at: string;
+}

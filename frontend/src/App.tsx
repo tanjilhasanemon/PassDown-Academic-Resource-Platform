@@ -18,12 +18,18 @@ import { useAuth } from "./context/AuthContext";
 import {
   ApiError,
   createCourseRequest,
+  fetchCourseRequests,
   fetchCourseDetailById,
   fetchPublicCourses,
   registerStudentAccount,
   verifySecurityScopeEndpoint,
 } from "./services/apiClient";
-import type { CourseDetail, CourseSummary, UserProfile } from "./types/api";
+import type {
+  CourseDetail,
+  CourseSummary,
+  PublicResourceRequest,
+  UserProfile,
+} from "./types/api";
 import { SECURITY_SCOPES } from "./types/api";
 
 type ActiveModal = "none" | "login" | "register" | "profile" | "rbac-inspector";
@@ -154,6 +160,9 @@ export function App() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [courseRequests, setCourseRequests] = useState<PublicResourceRequest[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [requestsLoadError, setRequestsLoadError] = useState<string | null>(null);
 
   // Modals & Feedback State (FR-01 & FR-02)
   const [activeModal, setActiveModal] = useState<ActiveModal>("none");
@@ -187,6 +196,7 @@ export function App() {
   } | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const selectedCourseId = selectedCourse?.id;
 
   const showToast = useCallback(
     (type: "success" | "error" | "info", text: string) => {
@@ -197,6 +207,29 @@ export function App() {
     },
     []
   );
+
+  const loadCourseRequests = useCallback(async (courseId: number) => {
+    setIsLoadingRequests(true);
+    setRequestsLoadError(null);
+    try {
+      setCourseRequests(await fetchCourseRequests(courseId));
+    } catch (err) {
+      setRequestsLoadError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to load course requests. Check your connection and try again."
+      );
+      setCourseRequests([]);
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeDetailTab === "requests" && selectedCourseId !== undefined) {
+      void loadCourseRequests(selectedCourseId);
+    }
+  }, [activeDetailTab, selectedCourseId, loadCourseRequests]);
 
   // Keyboard shortcut `/` or `Ctrl+K` / `Cmd+K` to focus course search (Nielsen H7)
   useEffect(() => {
@@ -374,6 +407,7 @@ export function App() {
       const created = await createCourseRequest(selectedCourse.id, description);
       setRequestDescription("");
       setRequestSuccess(`Request #${created.id} submitted with status open.`);
+      await loadCourseRequests(selectedCourse.id);
     } catch (err) {
       setRequestError(
         err instanceof ApiError
@@ -664,8 +698,8 @@ export function App() {
                     type="button"
                     onClick={() => setSelectedDept(dept)}
                     className={`px-2.5 py-1 rounded-md font-medium transition ${selectedDept === dept
-                        ? "bg-white text-zinc-900 shadow-sm"
-                        : "text-zinc-600 hover:text-zinc-900"
+                      ? "bg-white text-zinc-900 shadow-sm"
+                      : "text-zinc-600 hover:text-zinc-900"
                       }`}
                   >
                     {dept === "ALL" ? "All Depts" : dept}
@@ -678,8 +712,8 @@ export function App() {
                   type="button"
                   onClick={() => setViewMode("grid")}
                   className={`px-2.5 py-1 rounded-md font-medium transition ${viewMode === "grid"
-                      ? "bg-white text-zinc-900 shadow-sm"
-                      : "text-zinc-600 hover:text-zinc-900"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-600 hover:text-zinc-900"
                     }`}
                 >
                   Grid
@@ -688,8 +722,8 @@ export function App() {
                   type="button"
                   onClick={() => setViewMode("table")}
                   className={`px-2.5 py-1 rounded-md font-medium transition ${viewMode === "table"
-                      ? "bg-white text-zinc-900 shadow-sm"
-                      : "text-zinc-600 hover:text-zinc-900"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-600 hover:text-zinc-900"
                     }`}
                 >
                   Table
@@ -782,8 +816,8 @@ export function App() {
                     type="button"
                     onClick={() => setActiveDetailTab(tab.id)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${activeDetailTab === tab.id
-                        ? "bg-zinc-900 text-white"
-                        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60"
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60"
                       }`}
                   >
                     {tab.label}
@@ -822,8 +856,8 @@ export function App() {
                         type="button"
                         onClick={() => setSelectedMaterialType(t)}
                         className={`font-mono text-[11px] px-2.5 py-1 rounded border transition ${selectedMaterialType === t
-                            ? "bg-zinc-900 text-white border-zinc-900"
-                            : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:border-zinc-400"
+                          ? "bg-zinc-900 text-white border-zinc-900"
+                          : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:border-zinc-400"
                           }`}
                       >
                         {t}
@@ -834,65 +868,102 @@ export function App() {
               )}
 
               {activeDetailTab === "requests" ? (
-                <section aria-labelledby="request-form-title" className="max-w-2xl">
-                  <h3 id="request-form-title" className="text-sm font-semibold text-zinc-900">
-                    Request a resource
-                  </h3>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    For {selectedCourse.code}: {selectedCourse.title}
-                  </p>
-                  {user && scopes.includes(SECURITY_SCOPES.REQUESTS_WRITE) ? (
-                    <form onSubmit={handleRequestSubmit} className="mt-4 space-y-3">
-                      <label htmlFor="request-description" className="block text-xs font-medium text-zinc-700">
-                        What resource is missing?
-                      </label>
-                      <textarea
-                        id="request-description"
-                        value={requestDescription}
-                        onChange={(event) => {
-                          setRequestDescription(event.target.value);
-                          setRequestError(null);
-                          setRequestSuccess(null);
-                        }}
-                        rows={4}
-                        required
-                        aria-invalid={Boolean(requestError)}
-                        aria-describedby={requestError ? "request-error" : undefined}
-                        placeholder="Describe the notes, book, slides, or other material you need."
-                        className="block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/20"
-                      />
-                      {requestError && (
-                        <p id="request-error" role="alert" className="text-xs text-red-700">
-                          {requestError}
-                        </p>
-                      )}
-                      {requestSuccess && (
-                        <p role="status" className="text-xs text-emerald-800">
-                          {requestSuccess}
-                        </p>
-                      )}
-                      <button
-                        type="submit"
-                        disabled={isSubmittingRequest}
-                        className="rounded-md bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isSubmittingRequest ? "Submitting..." : "Submit request"}
-                      </button>
-                    </form>
-                  ) : user ? (
-                    <p className="mt-4 text-xs text-amber-800" role="status">
-                      Your account does not have permission to submit requests.
+                <section aria-labelledby="course-requests-title" className="space-y-6">
+                  <div>
+                    <h3 id="course-requests-title" className="text-sm font-semibold text-zinc-900">
+                      Course requests
+                    </h3>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {selectedCourse.code}: {selectedCourse.title}
                     </p>
-                  ) : (
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <p className="text-xs text-zinc-600">Sign in to submit a request.</p>
-                      <button
-                        type="button"
-                        onClick={() => setActiveModal("login")}
-                        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
-                      >
-                        Sign in
-                      </button>
+                    {isLoadingRequests ? (
+                      <p role="status" className="mt-4 text-xs text-zinc-500">
+                        Loading requests...
+                      </p>
+                    ) : requestsLoadError ? (
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <p role="alert" className="text-xs text-red-700">
+                          {requestsLoadError}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void loadCourseRequests(selectedCourse.id)}
+                          className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : courseRequests.length === 0 ? (
+                      <p role="status" className="mt-4 rounded-md border border-dashed border-zinc-300 p-4 text-xs text-zinc-500">
+                        No requests have been submitted for this course.
+                      </p>
+                    ) : (
+                      <ul className="mt-4 divide-y divide-zinc-200 border-y border-zinc-200">
+                        {courseRequests.map((courseRequest) => (
+                          <li key={courseRequest.id} className="py-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm text-zinc-800">
+                                {courseRequest.description}
+                              </p>
+                              <span
+                                className={`shrink-0 rounded px-2 py-1 text-[11px] font-medium capitalize ${courseRequest.status === "open"
+                                  ? "bg-emerald-50 text-emerald-800"
+                                  : "bg-zinc-100 text-zinc-700"
+                                  }`}
+                              >
+                                {courseRequest.status}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-zinc-500">
+                              Requested by {courseRequest.author_name} ·{" "}
+                              {new Date(courseRequest.created_at).toLocaleString()}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {user && scopes.includes(SECURITY_SCOPES.REQUESTS_WRITE) && (
+                    <div className="max-w-2xl border-t border-zinc-200 pt-5">
+                      <h4 className="text-sm font-semibold text-zinc-900">Request a resource</h4>
+                      <form onSubmit={handleRequestSubmit} className="mt-4 space-y-3">
+                        <label htmlFor="request-description" className="block text-xs font-medium text-zinc-700">
+                          What resource is missing?
+                        </label>
+                        <textarea
+                          id="request-description"
+                          value={requestDescription}
+                          onChange={(event) => {
+                            setRequestDescription(event.target.value);
+                            setRequestError(null);
+                            setRequestSuccess(null);
+                          }}
+                          rows={4}
+                          required
+                          aria-invalid={Boolean(requestError)}
+                          aria-describedby={requestError ? "request-error" : undefined}
+                          placeholder="Describe the notes, book, slides, or other material you need."
+                          className="block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/20"
+                        />
+                        {requestError && (
+                          <p id="request-error" role="alert" className="text-xs text-red-700">
+                            {requestError}
+                          </p>
+                        )}
+                        {requestSuccess && (
+                          <p role="status" className="text-xs text-emerald-800">
+                            {requestSuccess}
+                          </p>
+                        )}
+                        <button
+                          type="submit"
+                          disabled={isSubmittingRequest}
+                          className="rounded-md bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isSubmittingRequest ? "Submitting..." : "Submit request"}
+                        </button>
+                      </form>
                     </div>
                   )}
                 </section>
@@ -1387,8 +1458,8 @@ export function App() {
             {scopeProbeResult && (
               <div
                 className={`mb-4 p-3 rounded-lg border text-xs font-mono ${scopeProbeResult.status === 200
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                    : "bg-red-50 border-red-200 text-red-900"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                  : "bg-red-50 border-red-200 text-red-900"
                   }`}
               >
                 <strong>[{scopeProbeResult.scope}]</strong> {scopeProbeResult.message}

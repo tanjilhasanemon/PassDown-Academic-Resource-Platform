@@ -13,6 +13,7 @@ import type {
   CourseDetail,
   CourseSummary,
   LoginPayload,
+  PublicResourceRequest,
   RegisterPayload,
   ResourceRequest,
   ScopeVerificationResult,
@@ -208,4 +209,17 @@ export async function createCourseRequest(
     method: "POST",
     body: JSON.stringify({ description }),
   });
+}
+
+/**
+ * Lists public requests for a course without requiring an authenticated session (FR-11).
+ */
+export async function fetchCourseRequests(
+  courseId: number
+): Promise<PublicResourceRequest[]> {
+  return request<PublicResourceRequest[]>(
+    `/courses/${courseId}/requests`,
+    { method: "GET" },
+    true
+  );
 }

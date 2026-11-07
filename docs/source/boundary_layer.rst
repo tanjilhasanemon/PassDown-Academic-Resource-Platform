@@ -49,6 +49,29 @@ Example request and response:
        "created_at": "2026-11-07T10:30:00Z"
     }
 
+Public request browsing is available to Guests, Students, and Admins at
+``GET /api/v1/courses/{course_id}/requests``. It returns ``200 OK`` with an
+empty array when the course has no requests, and ``404`` for an unknown course.
+The public response includes the author's display name but omits their email
+and account ID.
+
+.. code-block:: text
+
+      GET /api/v1/courses/12/requests HTTP/1.1
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+         {
+            "id": 31,
+            "description": "Lecture notes for week 4",
+            "status": "open",
+            "author_name": "Student One",
+            "created_at": "2026-11-07T10:30:00Z"
+         }
+      ]
+
 Pydantic Validation & Serialization Schemas
 -------------------------------------------
 .. automodule:: app.schemas.auth_schema

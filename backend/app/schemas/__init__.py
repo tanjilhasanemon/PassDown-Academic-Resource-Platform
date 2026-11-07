@@ -15,13 +15,14 @@ from app.schemas.course_schema import (
     CourseRead,
     CourseResourceLinks,
 )
-from app.schemas.request_schema import RequestCreate, RequestRead
+from app.schemas.request_schema import RequestCreate, RequestPublicRead, RequestRead
 
 __all__ = [
     "CourseDetailRead",
     "CourseRead",
     "CourseResourceLinks",
     "RequestCreate",
+    "RequestPublicRead",
     "RequestRead",
     "LoginRequest",
     "ScopeCheckResponse",

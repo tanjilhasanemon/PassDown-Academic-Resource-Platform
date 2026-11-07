@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.core.security import SCOPE_REQUESTS_WRITE, get_current_user
 from app.schemas.auth_schema import UserRead
 from app.schemas.course_schema import CourseDetailRead, CourseRead
-from app.schemas.request_schema import RequestCreate, RequestRead
+from app.schemas.request_schema import RequestCreate, RequestPublicRead, RequestRead
 from app.services.course_service import CourseService
 from app.services.request_service import RequestService
 
@@ -49,6 +49,21 @@ def get_course_by_id(
 ) -> CourseDetailRead:
     """Returns full metadata and resource navigation links for a course, or 404."""
     return CourseService.get_course_detail(db, course_id=course_id)
+
+
+@router.get(
+    "/{course_id}/requests",
+    response_model=list[RequestPublicRead],
+    status_code=status.HTTP_200_OK,
+    summary="Browse public requests for a course (FR-11)",
+    responses={404: {"description": "The course does not exist."}},
+)
+def list_course_requests(
+    course_id: int,
+    db: Session = Depends(get_db),
+) -> list[RequestPublicRead]:
+    """Lists course requests publicly without requiring authentication."""
+    return RequestService.list_course_requests(db, course_id=course_id)
 
 
 @router.post(

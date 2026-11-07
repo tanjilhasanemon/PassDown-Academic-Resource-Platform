@@ -84,3 +84,13 @@ export interface CourseResourceLinks {
 export interface CourseDetail extends CourseSummary {
   resource_links: CourseResourceLinks;
 }
+
+/** Request returned by `POST /api/v1/courses/{id}/requests` (FR-10). */
+export interface ResourceRequest {
+  id: number;
+  course_id: number;
+  submitted_by: number;
+  description: string;
+  status: string;
+  created_at: string;
+}

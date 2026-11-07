@@ -14,6 +14,7 @@ import type {
   CourseSummary,
   LoginPayload,
   RegisterPayload,
+  ResourceRequest,
   ScopeVerificationResult,
   TokenSessionResponse,
   UserProfile,
@@ -194,4 +195,17 @@ export async function fetchCourseDetailById(
   courseId: number
 ): Promise<CourseDetail> {
   return request<CourseDetail>(`/courses/${courseId}`, { method: "GET" }, true);
+}
+
+/**
+ * Submits an authenticated user's resource request for a course (FR-10).
+ */
+export async function createCourseRequest(
+  courseId: number,
+  description: string
+): Promise<ResourceRequest> {
+  return request<ResourceRequest>(`/courses/${courseId}/requests`, {
+    method: "POST",
+    body: JSON.stringify({ description }),
+  });
 }

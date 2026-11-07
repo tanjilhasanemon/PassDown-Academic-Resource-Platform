@@ -61,3 +61,44 @@ class RequestRepository:
             .order_by(Request.created_at.desc(), Request.id.desc())
         )
         return list(db.execute(stmt).all())
+
+    @staticmethod
+    def get_by_id(db: Session, request_id: int) -> Request | None:
+        """Retrieves a request by its primary key.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            request_id (int): Request primary key.
+
+        Returns:
+            Request | None: Matching request, or None when it does not exist.
+        """
+        return db.get(Request, request_id)
+
+    @staticmethod
+    def set_status(db: Session, request: Request, new_status: str) -> Request:
+        """Updates and returns the request's persisted status.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            request (Request): Request entity to update.
+            new_status (str): New server-controlled status value.
+
+        Returns:
+            Request: Updated and refreshed request entity.
+        """
+        request.status = new_status
+        db.commit()
+        db.refresh(request)
+        return request
+
+    @staticmethod
+    def delete(db: Session, request: Request) -> None:
+        """Deletes a request without changing its course or related resources.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            request (Request): Request entity to delete.
+        """
+        db.delete(request)
+        db.commit()

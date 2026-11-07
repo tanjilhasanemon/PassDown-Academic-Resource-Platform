@@ -18,9 +18,11 @@ import { useAuth } from "./context/AuthContext";
 import {
   ApiError,
   createCourseRequest,
+  deleteCourseRequest,
   fetchCourseRequests,
   fetchCourseDetailById,
   fetchPublicCourses,
+  fulfillCourseRequest,
   registerStudentAccount,
   verifySecurityScopeEndpoint,
 } from "./services/apiClient";
@@ -163,6 +165,11 @@ export function App() {
   const [courseRequests, setCourseRequests] = useState<PublicResourceRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [requestsLoadError, setRequestsLoadError] = useState<string | null>(null);
+  const [requestActionError, setRequestActionError] = useState<string | null>(null);
+  const [activeRequestAction, setActiveRequestAction] = useState<{
+    requestId: number;
+    action: "fulfill" | "delete";
+  } | null>(null);
 
   // Modals & Feedback State (FR-01 & FR-02)
   const [activeModal, setActiveModal] = useState<ActiveModal>("none");
@@ -416,6 +423,50 @@ export function App() {
       );
     } finally {
       setIsSubmittingRequest(false);
+    }
+  };
+
+  const handleFulfillRequest = async (requestId: number) => {
+    if (activeRequestAction || !selectedCourse) return;
+    setActiveRequestAction({ requestId, action: "fulfill" });
+    setRequestActionError(null);
+    try {
+      await fulfillCourseRequest(requestId);
+      await loadCourseRequests(selectedCourse.id);
+      showToast("success", `Request #${requestId} marked as fulfilled.`);
+    } catch (err) {
+      setRequestActionError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to fulfill this request. Check your connection and try again."
+      );
+    } finally {
+      setActiveRequestAction(null);
+    }
+  };
+
+  const handleDeleteRequest = async (requestId: number) => {
+    if (
+      activeRequestAction ||
+      !selectedCourse ||
+      !window.confirm("Delete this request? This action cannot be undone.")
+    ) {
+      return;
+    }
+    setActiveRequestAction({ requestId, action: "delete" });
+    setRequestActionError(null);
+    try {
+      await deleteCourseRequest(requestId);
+      await loadCourseRequests(selectedCourse.id);
+      showToast("success", `Request #${requestId} deleted.`);
+    } catch (err) {
+      setRequestActionError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to delete this request. Check your connection and try again."
+      );
+    } finally {
+      setActiveRequestAction(null);
     }
   };
 
@@ -876,6 +927,11 @@ export function App() {
                     <p className="mt-1 text-xs text-zinc-500">
                       {selectedCourse.code}: {selectedCourse.title}
                     </p>
+                    {requestActionError && (
+                      <p role="alert" className="mt-3 text-xs text-red-700">
+                        {requestActionError}
+                      </p>
+                    )}
                     {isLoadingRequests ? (
                       <p role="status" className="mt-4 text-xs text-zinc-500">
                         Loading requests...
@@ -905,14 +961,47 @@ export function App() {
                               <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm text-zinc-800">
                                 {courseRequest.description}
                               </p>
-                              <span
-                                className={`shrink-0 rounded px-2 py-1 text-[11px] font-medium capitalize ${courseRequest.status === "open"
-                                  ? "bg-emerald-50 text-emerald-800"
-                                  : "bg-zinc-100 text-zinc-700"
-                                  }`}
-                              >
-                                {courseRequest.status}
-                              </span>
+                              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                <span
+                                  className={`rounded px-2 py-1 text-[11px] font-medium capitalize ${courseRequest.status === "open"
+                                    ? "bg-emerald-50 text-emerald-800"
+                                    : "bg-zinc-100 text-zinc-700"
+                                    }`}
+                                >
+                                  {courseRequest.status}
+                                </span>
+                                {user &&
+                                  scopes.includes(SECURITY_SCOPES.REQUESTS_WRITE) &&
+                                  (role === "admin" ||
+                                    user.id === courseRequest.submitted_by) && (
+                                    <div className="flex items-center gap-1.5">
+                                      {courseRequest.status === "open" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleFulfillRequest(courseRequest.id)}
+                                          disabled={activeRequestAction !== null}
+                                          className="rounded border border-emerald-700 px-2 py-1 text-[11px] font-medium text-emerald-800 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                          {activeRequestAction?.requestId === courseRequest.id &&
+                                            activeRequestAction.action === "fulfill"
+                                            ? "Fulfilling..."
+                                            : "Fulfill"}
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteRequest(courseRequest.id)}
+                                        disabled={activeRequestAction !== null}
+                                        className="rounded border border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        {activeRequestAction?.requestId === courseRequest.id &&
+                                          activeRequestAction.action === "delete"
+                                          ? "Deleting..."
+                                          : "Delete"}
+                                      </button>
+                                    </div>
+                                  )}
+                              </div>
                             </div>
                             <p className="mt-2 text-xs text-zinc-500">
                               Requested by {courseRequest.author_name} ·{" "}

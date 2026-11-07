@@ -6,8 +6,10 @@ Enforces FR-10 course existence and creates requests for the authenticated user.
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.security import ROLE_ADMIN
 from app.repositories.course_repo import CourseRepository
 from app.repositories.request_repo import RequestRepository
+from app.models.request import Request
 from app.schemas.request_schema import RequestPublicRead, RequestRead
 
 
@@ -76,6 +78,7 @@ class RequestService:
         return [
             RequestPublicRead(
                 id=request.id,
+                submitted_by=request.submitted_by,
                 description=request.description,
                 status=request.status,
                 author_name=author_name,
@@ -83,3 +86,106 @@ class RequestService:
             )
             for request, author_name in requests
         ]
+
+    @staticmethod
+    def fulfill_request(
+        db: Session,
+        *,
+        request_id: int,
+        acting_user_id: int,
+        acting_user_role: str,
+    ) -> RequestRead:
+        """Marks an open request fulfilled for its owner or an Admin.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            request_id (int): Request to fulfill.
+            acting_user_id (int): Authenticated user's ID.
+            acting_user_role (str): Authenticated user's role.
+
+        Raises:
+            HTTPException (403): If a Student does not own the request.
+            HTTPException (404): If the request does not exist.
+            HTTPException (409): If the request is not open.
+
+        Returns:
+            RequestRead: Updated request with status 'fulfilled'.
+        """
+        request = RequestService._get_accessible_request(
+            db,
+            request_id=request_id,
+            acting_user_id=acting_user_id,
+            acting_user_role=acting_user_role,
+        )
+        if request.status != "open":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Request is already fulfilled and cannot be fulfilled again.",
+            )
+
+        updated = RequestRepository.set_status(db, request, "fulfilled")
+        return RequestRead.model_validate(updated)
+
+    @staticmethod
+    def delete_request(
+        db: Session,
+        *,
+        request_id: int,
+        acting_user_id: int,
+        acting_user_role: str,
+    ) -> None:
+        """Deletes a request for its owner or an Admin.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            request_id (int): Request to delete.
+            acting_user_id (int): Authenticated user's ID.
+            acting_user_role (str): Authenticated user's role.
+
+        Raises:
+            HTTPException (403): If a Student does not own the request.
+            HTTPException (404): If the request does not exist.
+        """
+        request = RequestService._get_accessible_request(
+            db,
+            request_id=request_id,
+            acting_user_id=acting_user_id,
+            acting_user_role=acting_user_role,
+        )
+        RequestRepository.delete(db, request)
+
+    @staticmethod
+    def _get_accessible_request(
+        db: Session,
+        *,
+        request_id: int,
+        acting_user_id: int,
+        acting_user_role: str,
+    ) -> Request:
+        """Loads a request and enforces the owner-or-Admin rule.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            request_id (int): Request to load.
+            acting_user_id (int): Authenticated user's ID.
+            acting_user_role (str): Authenticated user's role.
+
+        Raises:
+            HTTPException (403): If the user is neither owner nor Admin.
+            HTTPException (404): If the request does not exist.
+
+        Returns:
+            Request: Request available to the authenticated user.
+        """
+        request = RequestRepository.get_by_id(db, request_id)
+        if request is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Request not found.",
+            )
+        if acting_user_role != ROLE_ADMIN and request.submitted_by != acting_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the request owner or an Admin may manage this request.",
+            )
+        return request

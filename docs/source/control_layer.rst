@@ -31,3 +31,8 @@ Domain Business Services
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. automodule:: app.services.request_service
+   :members:
+   :undoc-members:
+   :show-inheritance:

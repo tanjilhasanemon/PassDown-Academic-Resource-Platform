@@ -1,7 +1,8 @@
 """PassDown FastAPI Entrypoint (ECB Boundary Layer).
 
 Configures CORS (SRS NFR-04) and mounts `/api/v1` routers for Auth (FR-01, FR-02),
-Courses (FR-03), Contribution submissions (FR-07), and moderation (FR-08).
+Courses (FR-03), and Contribution submission, moderation, and management (FR-07,
+FR-08, and FR-09).
 """
 
 from fastapi import FastAPI
@@ -11,6 +12,9 @@ from app.core.config import settings
 from app.routers.auth_router import router as auth_router
 from app.routers.course_router import router as course_router
 from app.routers.contribution_router import router as contribution_router
+from app.routers.contribution_management_router import (
+    router as contribution_management_router,
+)
 from app.routers.contribution_moderation_router import (
     router as contribution_moderation_router,
 )
@@ -32,6 +36,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 app.include_router(course_router, prefix=settings.API_V1_PREFIX)
 app.include_router(contribution_router, prefix=settings.API_V1_PREFIX)
+app.include_router(contribution_management_router, prefix=settings.API_V1_PREFIX)
 app.include_router(contribution_moderation_router, prefix=settings.API_V1_PREFIX)
 
 

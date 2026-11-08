@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.main import app as fastapi_app
-from app.models import Course, User  # noqa: F401
+from app.models import Contribution, Course, User  # noqa: F401
 
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
 

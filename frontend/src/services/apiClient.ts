@@ -11,6 +11,7 @@
 
 import type {
   ContributionPayload,
+  ContributionModerationItem,
   ContributionSubmission,
   CourseDetail,
   CourseSummary,
@@ -225,5 +226,29 @@ export async function submitCourseContribution(
       method: "POST",
       body: JSON.stringify(payload),
     }
+  );
+}
+
+/**
+ * Fetches the Admin-only pending contribution moderation queue (FR-08).
+ */
+export async function fetchPendingContributions(): Promise<
+  ContributionModerationItem[]
+> {
+  return request<ContributionModerationItem[]>("/contributions/pending", {
+    method: "GET",
+  });
+}
+
+/**
+ * Approves or rejects a pending Contribution (FR-08).
+ */
+export async function moderateContribution(
+  contributionId: number,
+  action: "approve" | "reject"
+): Promise<ContributionSubmission> {
+  return request<ContributionSubmission>(
+    `/contributions/${contributionId}/${action}`,
+    { method: "PATCH" }
   );
 }

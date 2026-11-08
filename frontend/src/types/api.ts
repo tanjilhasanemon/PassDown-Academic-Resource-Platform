@@ -50,6 +50,12 @@ export interface ContributionSubmission
   created_at: string;
 }
 
+/** Pending contribution metadata returned to authorized Admin moderators (FR-08). */
+export interface ContributionModerationItem extends ContributionSubmission {
+  course: CourseSummary;
+  submitter: UserProfile;
+}
+
 /** Safe user profile returned by `/api/v1/auth/register` and `/api/v1/auth/me` (FR-01). */
 export interface UserProfile {
   id: number;

@@ -1,5 +1,5 @@
 /**
- * PassDown Primary Application Workspace (Boundary Layer — FR-01, FR-02, FR-03, FR-07).
+ * PassDown Primary Application Workspace (Boundary Layer — FR-01, FR-02, FR-03, FR-07, FR-08).
  *
  * Implements a Linear/Geist-inspired academic interface featuring:
  * 1. Top Command Header with active Actor/Role badge, In-Memory JWT Indicator,
@@ -18,14 +18,17 @@ import { useAuth } from "./context/AuthContext";
 import {
   ApiError,
   createCourseRequest,
+  fetchPendingContributions,
   fetchCourseDetailById,
   fetchPublicCourses,
+  moderateContribution,
   registerStudentAccount,
   submitCourseContribution,
   verifySecurityScopeEndpoint,
 } from "./services/apiClient";
 import type {
   ContributionType,
+  ContributionModerationItem,
   CourseDetail,
   CourseSummary,
   UserProfile,
@@ -187,6 +190,22 @@ export function App() {
   const [isSubmittingContribution, setIsSubmittingContribution] =
     useState(false);
 
+  // Contribution Moderation State (FR-08)
+  const [activeView, setActiveView] = useState<"catalogue" | "moderation">(
+    "catalogue"
+  );
+  const [pendingContributions, setPendingContributions] = useState<
+    ContributionModerationItem[]
+  >([]);
+  const [isLoadingModeration, setIsLoadingModeration] = useState(false);
+  const [moderationError, setModerationError] = useState<string | null>(null);
+  const [moderationSuccess, setModerationSuccess] = useState<string | null>(
+    null
+  );
+  const [moderatingContributionId, setModeratingContributionId] = useState<
+    number | null
+  >(null);
+
   // Modals & Feedback State (FR-01 & FR-02)
   const [activeModal, setActiveModal] = useState<ActiveModal>("none");
   const [toastMessage, setToastMessage] = useState<{
@@ -219,6 +238,9 @@ export function App() {
   } | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const canModerateContributions = scopes.includes(
+    SECURITY_SCOPES.CONTRIBUTIONS_MODERATE
+  );
 
   const showToast = useCallback(
     (type: "success" | "error" | "info", text: string) => {
@@ -248,6 +270,12 @@ export function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeModal]);
+
+  useEffect(() => {
+    if (!canModerateContributions) {
+      setActiveView("catalogue");
+    }
+  }, [canModerateContributions]);
 
   // Load courses from GET /api/v1/courses?search= (FR-03)
   const loadCourses = useCallback(async (query: string) => {
@@ -475,6 +503,49 @@ export function App() {
     }
   };
 
+  const loadPendingContributions = async () => {
+    setModerationError(null);
+    setModerationSuccess(null);
+    setIsLoadingModeration(true);
+    try {
+      setPendingContributions(await fetchPendingContributions());
+    } catch (err) {
+      setModerationError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setIsLoadingModeration(false);
+    }
+  };
+
+  const handleModerateContribution = async (
+    contributionId: number,
+    action: "approve" | "reject"
+  ) => {
+    setModerationError(null);
+    setModerationSuccess(null);
+    setModeratingContributionId(contributionId);
+    try {
+      const updated = await moderateContribution(contributionId, action);
+      setPendingContributions((current) =>
+        current.filter((item) => item.id !== updated.id)
+      );
+      setModerationSuccess(
+        `Contribution #${updated.id} ${action === "approve" ? "approved" : "rejected"}.`
+      );
+    } catch (err) {
+      setModerationError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setModeratingContributionId(null);
+    }
+  };
+
   // Open /auth/me Modal (FR-01)
   const handleOpenProfile = async () => {
     setActiveModal("profile");
@@ -585,6 +656,31 @@ export function App() {
           <div className="flex items-center gap-2.5">
             {user ? (
               <>
+                {canModerateContributions && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveView("moderation");
+                      void loadPendingContributions();
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition ${
+                      activeView === "moderation"
+                        ? "bg-zinc-900 text-white border-zinc-900"
+                        : "text-zinc-700 hover:bg-zinc-100 border-zinc-300"
+                    }`}
+                  >
+                    Moderation Queue
+                  </button>
+                )}
+                {activeView === "moderation" && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveView("catalogue")}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium text-zinc-700 hover:bg-zinc-100 border border-zinc-300"
+                  >
+                    Course Catalogue
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => void handleOpenProfile()}
@@ -684,6 +780,136 @@ export function App() {
 
       {/* Main Workspace Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+        {activeView === "moderation" && canModerateContributions ? (
+          <section aria-labelledby="moderation-queue-title">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs text-zinc-500">
+                  ADMIN • FR-08
+                </p>
+                <h1
+                  id="moderation-queue-title"
+                  className="mt-1 text-2xl font-bold text-zinc-900"
+                >
+                  Contribution Moderation Queue
+                </h1>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Review submissions before they become public.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadPendingContributions()}
+                disabled={isLoadingModeration}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60"
+              >
+                Refresh queue
+              </button>
+            </div>
+
+            {moderationError && (
+              <p
+                role="alert"
+                className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              >
+                {moderationError}
+              </p>
+            )}
+            {moderationSuccess && (
+              <p
+                role="status"
+                className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+              >
+                {moderationSuccess}
+              </p>
+            )}
+            {isLoadingModeration ? (
+              <p role="status" className="rounded-xl border bg-white p-8 text-center text-sm text-zinc-600">
+                Loading pending contributions…
+              </p>
+            ) : pendingContributions.length === 0 && !moderationError ? (
+              <p className="rounded-xl border bg-white p-8 text-center text-sm text-zinc-600">
+                no pending contributions
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {pendingContributions.map((contribution) => (
+                  <article
+                    key={contribution.id}
+                    className="rounded-xl border border-zinc-200 bg-white p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-base font-semibold text-zinc-900">
+                            {contribution.title}
+                          </h2>
+                          <span className="rounded bg-zinc-100 px-2 py-0.5 font-mono text-xs text-zinc-700">
+                            {contribution.type}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-600">
+                          {contribution.course.code} — {contribution.course.title}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          Submitted by {contribution.submitter.name} (
+                          {contribution.submitter.email}) on{" "}
+                          {new Date(contribution.created_at).toLocaleString()}
+                        </p>
+                        {contribution.description && (
+                          <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">
+                            {contribution.description}
+                          </p>
+                        )}
+                        <a
+                          href={contribution.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-block break-all text-sm text-teal-800 underline"
+                        >
+                          {contribution.url}
+                        </a>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleModerateContribution(
+                              contribution.id,
+                              "approve"
+                            )
+                          }
+                          disabled={moderatingContributionId !== null}
+                          className="rounded-md bg-emerald-700 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {moderatingContributionId === contribution.id
+                            ? "Saving…"
+                            : "Approve"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleModerateContribution(
+                              contribution.id,
+                              "reject"
+                            )
+                          }
+                          disabled={moderatingContributionId !== null}
+                          className="rounded-md bg-red-700 px-3 py-2 text-xs font-medium text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {moderatingContributionId === contribution.id
+                            ? "Saving…"
+                            : "Reject"}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : (
+          <>
         {/* Workspace Hero & Search Bar (FR-03) */}
         <div className="bg-white border border-zinc-200 rounded-xl p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
@@ -1287,6 +1513,8 @@ export function App() {
               </tbody>
             </table>
           </div>
+        )}
+          </>
         )}
       </main>
 

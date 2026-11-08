@@ -22,6 +22,11 @@ SQLAlchemy ORM Models
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: app.models.contribution
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: app.models.request
    :members:
    :undoc-members:
@@ -35,6 +40,11 @@ Data Access Repositories
    :show-inheritance:
 
 .. automodule:: app.repositories.course_repo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: app.repositories.contribution_repo
    :members:
    :undoc-members:
    :show-inheritance:

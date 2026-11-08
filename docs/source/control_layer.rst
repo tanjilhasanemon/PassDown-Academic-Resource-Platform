@@ -32,6 +32,11 @@ Domain Business Services
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: app.services.contribution_service
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: app.services.request_service
    :members:
    :undoc-members:

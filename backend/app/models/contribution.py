@@ -22,7 +22,7 @@ class Contribution(Base):
         type (str): Resource type such as slides, notes, or past_paper.
         url (str): HTTPS URL pointing to the resource.
         description (str | None): Optional additional resource details.
-        status (str): Review status, initially and exclusively set to 'pending'.
+        status (str): Review status, initially 'pending' and moderated by Admins.
         created_at (datetime): UTC timestamp when the submission was created.
     """
 

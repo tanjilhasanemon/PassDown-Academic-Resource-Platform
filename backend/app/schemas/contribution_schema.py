@@ -1,6 +1,7 @@
 """Contribution Pydantic Schemas (ECB Boundary Layer).
 
-Defines validated FR-07 submission input and safe contribution response schemas.
+Defines validated contribution submission, response, and moderation schemas for
+FR-07 and FR-08.
 """
 
 from datetime import datetime
@@ -14,6 +15,9 @@ from pydantic import (
     UrlConstraints,
     field_validator,
 )
+
+from app.schemas.auth_schema import UserRead
+from app.schemas.course_schema import CourseRead
 
 HttpsUrl = Annotated[
     AnyUrl,
@@ -59,3 +63,10 @@ class ContributionRead(BaseModel):
     description: str | None
     status: str
     created_at: datetime
+
+
+class ContributionModerationRead(ContributionRead):
+    """Pending queue schema with course and submitter metadata for review."""
+
+    course: CourseRead
+    submitter: UserRead

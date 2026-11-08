@@ -1,10 +1,10 @@
 """Contribution Repository Module (ECB Entity Layer).
 
-Provides persistence and moderation queries for Contribution entities under FR-07
-and FR-08.
+Provides persistence, moderation, and ownership queries for Contribution
+entities under FR-07, FR-08, and FR-09.
 """
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.models.course import Course
@@ -91,6 +91,25 @@ class ContributionRepository:
         return db.execute(stmt).scalar_one_or_none()
 
     @staticmethod
+    def list_by_submitter(db: Session, submitted_by: int) -> list[Contribution]:
+        """Lists a user's Contributions, newest first.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            submitted_by (int): User whose Contributions are requested.
+
+        Returns:
+            list[Contribution]: The user's Contributions in reverse submission
+                order.
+        """
+        stmt = (
+            select(Contribution)
+            .where(Contribution.submitted_by == submitted_by)
+            .order_by(Contribution.created_at.desc(), Contribution.id.desc())
+        )
+        return list(db.execute(stmt).scalars().all())
+
+    @staticmethod
     def list_approved_by_course(db: Session, course_id: int) -> list[Contribution]:
         """Lists only approved Contributions belonging to a course.
 
@@ -140,3 +159,83 @@ class ContributionRepository:
 
         db.commit()
         return ContributionRepository.get_by_id(db, contribution_id)
+
+    @staticmethod
+    def update_if_pending(
+        db: Session,
+        *,
+        contribution_id: int,
+        submitted_by: int,
+        title: str,
+        type: str,
+        url: str,
+        description: str | None,
+    ) -> Contribution | None:
+        """Updates an owner's pending Contribution without changing its status.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            contribution_id (int): Contribution to update.
+            submitted_by (int): Owner authorized to edit the record.
+            title (str): Validated contribution title.
+            type (str): Validated contribution type.
+            url (str): Validated HTTPS resource URL.
+            description (str | None): Optional validated description.
+
+        Returns:
+            Contribution | None: Updated entity, or None if ownership or status
+                no longer matches.
+        """
+        stmt = (
+            update(Contribution)
+            .where(
+                Contribution.id == contribution_id,
+                Contribution.submitted_by == submitted_by,
+                Contribution.status == "pending",
+            )
+            .values(
+                title=title,
+                type=type,
+                url=url,
+                description=description,
+            )
+            .execution_options(synchronize_session=False)
+        )
+        result = db.execute(stmt)
+        if result.rowcount != 1:
+            return None
+
+        db.commit()
+        return ContributionRepository.get_by_id(db, contribution_id)
+
+    @staticmethod
+    def delete_by_id(
+        db: Session,
+        *,
+        contribution_id: int,
+        submitted_by: int | None = None,
+        pending_only: bool = False,
+    ) -> bool:
+        """Deletes a Contribution, optionally restricting deletion to its owner.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            contribution_id (int): Contribution to delete.
+            submitted_by (int | None): Required owner for Student deletion.
+            pending_only (bool): Whether the record must still be pending.
+
+        Returns:
+            bool: True if a record was deleted; otherwise False.
+        """
+        stmt = delete(Contribution).where(Contribution.id == contribution_id)
+        if submitted_by is not None:
+            stmt = stmt.where(Contribution.submitted_by == submitted_by)
+        if pending_only:
+            stmt = stmt.where(Contribution.status == "pending")
+
+        result = db.execute(stmt)
+        if result.rowcount != 1:
+            return False
+
+        db.commit()
+        return True

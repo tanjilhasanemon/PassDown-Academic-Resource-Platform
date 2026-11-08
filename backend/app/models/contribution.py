@@ -21,7 +21,7 @@ class Contribution(Base):
         title (str): Short title describing the resource.
         type (str): Resource type such as slides, notes, or past_paper.
         url (str): HTTPS URL pointing to the resource.
-        description (str): Additional details about the resource.
+        description (str | None): Optional additional resource details.
         status (str): Review status, initially and exclusively set to 'pending'.
         created_at (datetime): UTC timestamp when the submission was created.
     """
@@ -38,7 +38,7 @@ class Contribution(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     type: Mapped[str] = mapped_column(String(32), nullable=False)
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default="pending", server_default="pending"
     )

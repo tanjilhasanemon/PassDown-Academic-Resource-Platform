@@ -20,7 +20,7 @@ class ContributionRepository:
         title: str,
         type: str,
         url: str,
-        description: str,
+        description: str | None,
     ) -> Contribution:
         """Persists and returns a new pending Contribution.
 
@@ -31,7 +31,7 @@ class ContributionRepository:
             title (str): Validated contribution title.
             type (str): Validated contribution type.
             url (str): Validated HTTPS resource URL.
-            description (str): Validated contribution description.
+            description (str | None): Optional validated contribution description.
 
         Returns:
             Contribution: Newly created and refreshed Contribution entity.

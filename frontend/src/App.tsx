@@ -430,8 +430,8 @@ export function App() {
       setContributionSuccess(null);
       return;
     }
-    if (!description || description.length > 2000) {
-      setContributionError("Enter a description of 1 to 2000 characters.");
+    if (description.length > 2000) {
+      setContributionError("Description must be at most 2000 characters.");
       setContributionSuccess(null);
       return;
     }
@@ -455,7 +455,7 @@ export function App() {
         title,
         type: contributionType,
         url,
-        description,
+        description: description || undefined,
       });
       setContributionTitle("");
       setContributionType("slides");
@@ -1095,7 +1095,7 @@ export function App() {
                           htmlFor="contribution-description"
                           className="block text-xs font-medium text-zinc-700"
                         >
-                          Description
+                          Description (optional)
                         </label>
                         <textarea
                           id="contribution-description"
@@ -1107,7 +1107,6 @@ export function App() {
                           }}
                           rows={4}
                           maxLength={2000}
-                          required
                           className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
                         />
                       </div>

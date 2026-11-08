@@ -5,7 +5,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.security import ROLE_GUEST, ROLE_STUDENT, create_access_token
+from app.core.security import (
+    ROLE_ADMIN,
+    ROLE_GUEST,
+    ROLE_STUDENT,
+    create_access_token,
+)
 from app.models.contribution import Contribution
 from app.repositories.course_repo import CourseRepository
 from app.repositories.user_repo import UserRepository
@@ -90,7 +95,7 @@ def test_fr07_authenticated_submission_is_pending_and_records_submitter(
         ("type", "video"),
         ("url", "http://example.com/resource"),
         ("url", "not a URL"),
-        ("description", " \t "),
+        ("description", "x" * 2001),
     ],
 )
 def test_fr07_invalid_contribution_fields_are_rejected(
@@ -99,7 +104,7 @@ def test_fr07_invalid_contribution_fields_are_rejected(
     invalid_field: str,
     invalid_value: str,
 ) -> None:
-    """Blank text, unknown types, and non-HTTPS URLs return 422."""
+    """Invalid titles, types, URLs, and overlong descriptions return 422."""
     course_id = create_course(db_session)
     headers, _ = create_student_headers(
         db_session,
@@ -150,6 +155,30 @@ def test_fr07_guest_cannot_submit_contribution(
     assert db_session.execute(select(Contribution)).scalars().all() == []
 
 
+def test_fr07_admin_with_write_scope_can_submit_contribution(
+    client: TestClient, db_session: Session
+) -> None:
+    """An authorized Admin can submit a Contribution with pending status."""
+    user = UserRepository.create(
+        db_session,
+        name="Admin Contributor",
+        email="admin_contribution@iub.edu.bd",
+        password_hash="unused-test-hash",
+        role=ROLE_ADMIN,
+    )
+    token = create_access_token(user_id=user.id, role=ROLE_ADMIN)
+
+    response = client.post(
+        f"/api/v1/courses/{create_course(db_session)}/contributions",
+        json=valid_payload(),
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["submitted_by"] == user.id
+    assert response.json()["status"] == "pending"
+
+
 def test_fr07_authenticated_user_without_write_scope_is_forbidden(
     client: TestClient, db_session: Session
 ) -> None:
@@ -168,6 +197,35 @@ def test_fr07_authenticated_user_without_write_scope_is_forbidden(
 
     assert response.status_code == 403
     assert db_session.execute(select(Contribution)).scalars().all() == []
+
+
+def test_fr07_description_is_optional_and_trimmed_when_provided(
+    client: TestClient, db_session: Session
+) -> None:
+    """An omitted description is accepted; a supplied one is trimmed."""
+    course_id = create_course(db_session)
+    headers, _ = create_student_headers(
+        db_session, email="optional_description@iub.edu.bd"
+    )
+    payload = valid_payload()
+    payload.pop("description")
+
+    without_description = client.post(
+        f"/api/v1/courses/{course_id}/contributions",
+        json=payload,
+        headers=headers,
+    )
+    assert without_description.status_code == 201
+    assert without_description.json()["description"] is None
+
+    payload["description"] = "  Useful lecture overview  "
+    with_description = client.post(
+        f"/api/v1/courses/{course_id}/contributions",
+        json=payload,
+        headers=headers,
+    )
+    assert with_description.status_code == 201
+    assert with_description.json()["description"] == "Useful lecture overview"
 
 
 def test_fr07_nonexistent_course_is_rejected_without_record(

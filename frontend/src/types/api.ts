@@ -36,14 +36,16 @@ export interface ContributionPayload {
   title: string;
   type: ContributionType;
   url: string;
-  description: string;
+  description?: string | null;
 }
 
 /** Response returned after an authenticated contribution submission (FR-07). */
-export interface ContributionSubmission extends ContributionPayload {
+export interface ContributionSubmission
+  extends Omit<ContributionPayload, "description"> {
   id: number;
   course_id: number;
   submitted_by: number;
+  description: string | null;
   status: string;
   created_at: string;
 }

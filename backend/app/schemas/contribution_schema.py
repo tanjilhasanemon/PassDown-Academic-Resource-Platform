@@ -28,13 +28,21 @@ class ContributionCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     type: ContributionType
     url: HttpsUrl
-    description: str = Field(..., min_length=1, max_length=2000)
+    description: str | None = Field(default=None, min_length=1, max_length=2000)
 
-    @field_validator("title", "description", mode="before")
+    @field_validator("title", mode="before")
     @classmethod
-    def strip_text_fields(cls, value: Any) -> Any:
-        """Trims text input so whitespace-only titles and descriptions fail."""
+    def strip_title(cls, value: Any) -> Any:
+        """Trims the title so whitespace-only input fails validation."""
         return value.strip() if isinstance(value, str) else value
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def strip_description(cls, value: Any) -> Any:
+        """Trims a supplied description and treats whitespace-only input as absent."""
+        if isinstance(value, str):
+            return value.strip() or None
+        return value
 
 
 class ContributionRead(BaseModel):
@@ -48,6 +56,6 @@ class ContributionRead(BaseModel):
     title: str
     type: str
     url: str
-    description: str
+    description: str | None
     status: str
     created_at: datetime

@@ -29,7 +29,8 @@ class ContributionService:
             db (Session): Active SQLAlchemy database session.
             course_id (int): Course associated with the submitted resource.
             submitted_by (int): Authenticated user's database identifier.
-            payload (ContributionCreate): Validated contribution data.
+            payload (ContributionCreate): Validated contribution data, including
+                an optional description.
 
         Raises:
             HTTPException (404): If the requested course does not exist.

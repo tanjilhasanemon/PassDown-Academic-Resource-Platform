@@ -270,4 +270,5 @@ def test_fr07_pending_contribution_is_not_publicly_listed(
     assert all("contributions" not in course for course in public_list.json())
     assert public_detail.status_code == 200
     assert "contributions" not in public_detail.json()
-    assert public_contributions.status_code == 405
+    assert public_contributions.status_code == 200
+    assert public_contributions.json() == []

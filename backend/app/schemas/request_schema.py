@@ -32,3 +32,13 @@ class RequestRead(BaseModel):
     description: str
     status: str
     created_at: datetime
+
+
+class RequestPublicRead(BaseModel):
+    """Public request fields, excluding account identifiers and contact data."""
+
+    id: int
+    description: str
+    status: str
+    author_name: str
+    created_at: datetime

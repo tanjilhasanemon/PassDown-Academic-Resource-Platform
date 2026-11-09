@@ -84,36 +84,28 @@ Example request and response:
        "created_at": "2026-11-07T10:30:00Z"
     }
 
-FR-09 Contribution Ownership API
----------------------------------
-Authenticated users with the ``contributions:write`` scope can list their
-Contributions at ``GET /api/v1/contributions/mine``. The owner can edit a
-pending Contribution with ``PUT /api/v1/contributions/{contribution_id}``;
-status and submitter fields are not accepted as editable input. Owners can
-withdraw their pending Contribution with ``DELETE`` on the same path. A
-non-owner receives ``403``, a missing record ``404``, and an owner attempting
-to edit or withdraw an approved or rejected record receives ``409``. Admins
-may delete any Contribution; deleted records no longer appear in public or
-moderation listings.
+Public request browsing is available to Guests, Students, and Admins at
+``GET /api/v1/courses/{course_id}/requests``. It returns ``200 OK`` with an
+empty array when the course has no requests, and ``404`` for an unknown course.
+The public response includes the author's display name but omits their email
+and account ID.
 
 .. code-block:: text
 
-    PUT /api/v1/contributions/31 HTTP/1.1
-    Authorization: Bearer <access-token>
-    Content-Type: application/json
+      GET /api/v1/courses/12/requests HTTP/1.1
 
-    {"title": "Updated lecture slides", "type": "slides",
-     "url": "https://example.com/slides-v2.pdf",
-     "description": "Revised slides"}
+      HTTP/1.1 200 OK
+      Content-Type: application/json
 
-    HTTP/1.1 200 OK
-    Content-Type: application/json
-
-    {"id": 31, "course_id": 12, "submitted_by": 7,
-     "title": "Updated lecture slides", "type": "slides",
-     "url": "https://example.com/slides-v2.pdf",
-     "description": "Revised slides", "status": "pending",
-     "created_at": "2026-11-07T10:30:00Z"}
+      [
+         {
+            "id": 31,
+            "description": "Lecture notes for week 4",
+            "status": "open",
+            "author_name": "Student One",
+            "created_at": "2026-11-07T10:30:00Z"
+         }
+      ]
 
 Pydantic Validation & Serialization Schemas
 -------------------------------------------

@@ -17,6 +17,7 @@ import type {
   CourseDetail,
   CourseSummary,
   LoginPayload,
+  PublicResourceRequest,
   RegisterPayload,
   ResourceRequest,
   ScopeVerificationResult,
@@ -219,74 +220,14 @@ export async function createCourseRequest(
 }
 
 /**
- * Submits an authenticated contribution for review (FR-07).
+ * Lists public requests for a course without requiring an authenticated session (FR-11).
  */
-export async function submitCourseContribution(
-  courseId: number,
-  payload: ContributionPayload
-): Promise<ContributionSubmission> {
-  return request<ContributionSubmission>(
-    `/courses/${courseId}/contributions`,
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }
+export async function fetchCourseRequests(
+  courseId: number
+): Promise<PublicResourceRequest[]> {
+  return request<PublicResourceRequest[]>(
+    `/courses/${courseId}/requests`,
+    { method: "GET" },
+    true
   );
-}
-
-/**
- * Fetches the Admin-only pending contribution moderation queue (FR-08).
- */
-export async function fetchPendingContributions(): Promise<
-  ContributionModerationItem[]
-> {
-  return request<ContributionModerationItem[]>("/contributions/pending", {
-    method: "GET",
-  });
-}
-
-/**
- * Approves or rejects a pending Contribution (FR-08).
- */
-export async function moderateContribution(
-  contributionId: number,
-  action: "approve" | "reject"
-): Promise<ContributionSubmission> {
-  return request<ContributionSubmission>(
-    `/contributions/${contributionId}/${action}`,
-    { method: "PATCH" }
-  );
-}
-
-/**
- * Lists the authenticated user's Contributions and their review statuses (FR-09).
- */
-export async function fetchMyContributions(): Promise<ContributionSubmission[]> {
-  return request<ContributionSubmission[]>("/contributions/mine", {
-    method: "GET",
-  });
-}
-
-/**
- * Updates an owned pending Contribution (FR-09).
- */
-export async function updateMyContribution(
-  contributionId: number,
-  payload: ContributionUpdatePayload
-): Promise<ContributionSubmission> {
-  return request<ContributionSubmission>(`/contributions/${contributionId}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
-}
-
-/**
- * Withdraws an owned pending Contribution (FR-09).
- */
-export async function deleteMyContribution(
-  contributionId: number
-): Promise<void> {
-  return request<void>(`/contributions/${contributionId}`, {
-    method: "DELETE",
-  });
 }

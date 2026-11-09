@@ -23,7 +23,7 @@ export const SECURITY_SCOPES = {
 export type SecurityScope =
   (typeof SECURITY_SCOPES)[keyof typeof SECURITY_SCOPES];
 
-/** Resource types accepted by `POST /api/v1/courses/{id}/contributions` (FR-07). */
+/** Resource types accepted by Contribution submission and editing (FR-07, FR-09). */
 export type ContributionType =
   | "slides"
   | "notes"
@@ -31,13 +31,16 @@ export type ContributionType =
   | "book"
   | "other";
 
-/** Payload sent when submitting a course contribution (FR-07). */
+/** Payload sent when submitting or editing a Contribution (FR-07, FR-09). */
 export interface ContributionPayload {
   title: string;
   type: ContributionType;
   url: string;
   description?: string | null;
 }
+
+/** Editable fields for an existing pending Contribution (FR-09). */
+export type ContributionUpdatePayload = ContributionPayload;
 
 /** Response returned after an authenticated contribution submission (FR-07). */
 export interface ContributionSubmission

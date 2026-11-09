@@ -1,5 +1,5 @@
 /**
- * PassDown Primary Application Workspace (Boundary Layer — FR-01, FR-02, FR-03, FR-07, FR-08).
+ * PassDown Primary Application Workspace (Boundary Layer — FR-01, FR-02, FR-03, FR-07, FR-08, FR-09).
  *
  * Implements a Linear/Geist-inspired academic interface featuring:
  * 1. Top Command Header with active Actor/Role badge, In-Memory JWT Indicator,
@@ -18,17 +18,22 @@ import { useAuth } from "./context/AuthContext";
 import {
   ApiError,
   createCourseRequest,
+  deleteMyContribution,
+  fetchMyContributions,
   fetchPendingContributions,
   fetchCourseDetailById,
   fetchPublicCourses,
   moderateContribution,
   registerStudentAccount,
   submitCourseContribution,
+  updateMyContribution,
   verifySecurityScopeEndpoint,
 } from "./services/apiClient";
 import type {
   ContributionType,
   ContributionModerationItem,
+  ContributionSubmission,
+  ContributionUpdatePayload,
   CourseDetail,
   CourseSummary,
   UserProfile,
@@ -191,9 +196,9 @@ export function App() {
     useState(false);
 
   // Contribution Moderation State (FR-08)
-  const [activeView, setActiveView] = useState<"catalogue" | "moderation">(
-    "catalogue"
-  );
+  const [activeView, setActiveView] = useState<
+    "catalogue" | "moderation" | "mine"
+  >("catalogue");
   const [pendingContributions, setPendingContributions] = useState<
     ContributionModerationItem[]
   >([]);
@@ -203,6 +208,30 @@ export function App() {
     null
   );
   const [moderatingContributionId, setModeratingContributionId] = useState<
+    number | null
+  >(null);
+
+  // My Contributions State (FR-09)
+  const [myContributions, setMyContributions] = useState<
+    ContributionSubmission[]
+  >([]);
+  const [isLoadingMyContributions, setIsLoadingMyContributions] =
+    useState(false);
+  const [myContributionsError, setMyContributionsError] = useState<
+    string | null
+  >(null);
+  const [myContributionsSuccess, setMyContributionsSuccess] = useState<
+    string | null
+  >(null);
+  const [editingContributionId, setEditingContributionId] = useState<
+    number | null
+  >(null);
+  const [contributionEditDraft, setContributionEditDraft] =
+    useState<ContributionUpdatePayload | null>(null);
+  const [savingContributionId, setSavingContributionId] = useState<
+    number | null
+  >(null);
+  const [deletingContributionId, setDeletingContributionId] = useState<
     number | null
   >(null);
 
@@ -241,6 +270,9 @@ export function App() {
   const canModerateContributions = scopes.includes(
     SECURITY_SCOPES.CONTRIBUTIONS_MODERATE
   );
+  const canManageContributions = scopes.includes(
+    SECURITY_SCOPES.CONTRIBUTIONS_WRITE
+  );
 
   const showToast = useCallback(
     (type: "success" | "error" | "info", text: string) => {
@@ -272,10 +304,13 @@ export function App() {
   }, [activeModal]);
 
   useEffect(() => {
-    if (!canModerateContributions) {
+    if (!canModerateContributions && activeView === "moderation") {
       setActiveView("catalogue");
     }
-  }, [canModerateContributions]);
+    if (!canManageContributions && activeView === "mine") {
+      setActiveView("catalogue");
+    }
+  }, [activeView, canManageContributions, canModerateContributions]);
 
   // Load courses from GET /api/v1/courses?search= (FR-03)
   const loadCourses = useCallback(async (query: string) => {
@@ -546,6 +581,132 @@ export function App() {
     }
   };
 
+  const loadMyContributions = async () => {
+    setMyContributionsError(null);
+    setMyContributionsSuccess(null);
+    setIsLoadingMyContributions(true);
+    try {
+      setMyContributions(await fetchMyContributions());
+    } catch (err) {
+      setMyContributionsError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setIsLoadingMyContributions(false);
+    }
+  };
+
+  const startEditingContribution = (
+    contribution: ContributionSubmission
+  ) => {
+    setMyContributionsError(null);
+    setMyContributionsSuccess(null);
+    setEditingContributionId(contribution.id);
+    setContributionEditDraft({
+      title: contribution.title,
+      type: contribution.type,
+      url: contribution.url,
+      description: contribution.description ?? "",
+    });
+  };
+
+  const handleSaveContributionEdit = async (
+    event: React.FormEvent,
+    contributionId: number
+  ) => {
+    event.preventDefault();
+    if (!contributionEditDraft || savingContributionId !== null) return;
+
+    const title = contributionEditDraft.title.trim();
+    const url = contributionEditDraft.url.trim();
+    const description = contributionEditDraft.description?.trim() ?? "";
+    if (!title || title.length > 200) {
+      setMyContributionsError("Enter a title of 1 to 200 characters.");
+      return;
+    }
+    if (description.length > 2000) {
+      setMyContributionsError("Description must be at most 2000 characters.");
+      return;
+    }
+    try {
+      if (new URL(url).protocol !== "https:") {
+        setMyContributionsError("The resource URL must use HTTPS.");
+        return;
+      }
+    } catch {
+      setMyContributionsError("Enter a valid HTTPS resource URL.");
+      return;
+    }
+
+    setMyContributionsError(null);
+    setMyContributionsSuccess(null);
+    setSavingContributionId(contributionId);
+    try {
+      const updated = await updateMyContribution(contributionId, {
+        ...contributionEditDraft,
+        title,
+        url,
+        description: description || undefined,
+      });
+      setMyContributions((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item))
+      );
+      setEditingContributionId(null);
+      setContributionEditDraft(null);
+      setMyContributionsSuccess(
+        `Contribution #${updated.id} updated and remains pending review.`
+      );
+    } catch (err) {
+      setMyContributionsError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setSavingContributionId(null);
+    }
+  };
+
+  const handleDeleteMyContribution = async (
+    contribution: ContributionSubmission
+  ) => {
+    if (
+      deletingContributionId !== null ||
+      !window.confirm(
+        `Withdraw "${contribution.title}"? This permanently deletes the pending Contribution.`
+      )
+    ) {
+      return;
+    }
+
+    setMyContributionsError(null);
+    setMyContributionsSuccess(null);
+    setDeletingContributionId(contribution.id);
+    try {
+      await deleteMyContribution(contribution.id);
+      setMyContributions((current) =>
+        current.filter((item) => item.id !== contribution.id)
+      );
+      setMyContributionsSuccess(
+        `Contribution #${contribution.id} withdrawn.`
+      );
+      if (editingContributionId === contribution.id) {
+        setEditingContributionId(null);
+        setContributionEditDraft(null);
+      }
+    } catch (err) {
+      setMyContributionsError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setDeletingContributionId(null);
+    }
+  };
+
   // Open /auth/me Modal (FR-01)
   const handleOpenProfile = async () => {
     setActiveModal("profile");
@@ -672,7 +833,23 @@ export function App() {
                     Moderation Queue
                   </button>
                 )}
-                {activeView === "moderation" && (
+                {canManageContributions && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveView("mine");
+                      void loadMyContributions();
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition ${
+                      activeView === "mine"
+                        ? "bg-zinc-900 text-white border-zinc-900"
+                        : "text-zinc-700 hover:bg-zinc-100 border-zinc-300"
+                    }`}
+                  >
+                    My Contributions
+                  </button>
+                )}
+                {activeView !== "catalogue" && (
                   <button
                     type="button"
                     onClick={() => setActiveView("catalogue")}
@@ -905,6 +1082,256 @@ export function App() {
                     </div>
                   </article>
                 ))}
+              </div>
+            )}
+          </section>
+        ) : activeView === "mine" && canManageContributions ? (
+          <section aria-labelledby="my-contributions-title">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs text-zinc-500">
+                  {user?.role.toUpperCase()} • FR-09
+                </p>
+                <h1
+                  id="my-contributions-title"
+                  className="mt-1 text-2xl font-bold text-zinc-900"
+                >
+                  My Contributions
+                </h1>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Track review status and update or withdraw pending submissions.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadMyContributions()}
+                disabled={isLoadingMyContributions}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {myContributionsError && (
+              <p
+                role="alert"
+                className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              >
+                {myContributionsError}
+              </p>
+            )}
+            {myContributionsSuccess && (
+              <p
+                role="status"
+                className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+              >
+                {myContributionsSuccess}
+              </p>
+            )}
+
+            {isLoadingMyContributions ? (
+              <p
+                role="status"
+                className="rounded-xl border bg-white p-8 text-center text-sm text-zinc-600"
+              >
+                Loading your Contributions…
+              </p>
+            ) : myContributions.length === 0 && !myContributionsError ? (
+              <p className="rounded-xl border bg-white p-8 text-center text-sm text-zinc-600">
+                You have not submitted any Contributions yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {myContributions.map((contribution) => {
+                  const isOwner = user?.id === contribution.submitted_by;
+                  const isPending = contribution.status === "pending";
+                  const isEditing =
+                    editingContributionId === contribution.id &&
+                    contributionEditDraft !== null;
+                  return (
+                    <article
+                      key={contribution.id}
+                      className="rounded-xl border border-zinc-200 bg-white p-5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-base font-semibold text-zinc-900">
+                              {contribution.title}
+                            </h2>
+                            <span className="rounded bg-zinc-100 px-2 py-0.5 font-mono text-xs text-zinc-700">
+                              {contribution.type}
+                            </span>
+                            <span
+                              className={`rounded px-2 py-0.5 font-mono text-xs ${
+                                contribution.status === "approved"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : contribution.status === "rejected"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-amber-100 text-amber-800"
+                              }`}
+                            >
+                              {contribution.status}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Course #{contribution.course_id} · Submitted{" "}
+                            {new Date(contribution.created_at).toLocaleString()}
+                          </p>
+                          {contribution.description && (
+                            <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">
+                              {contribution.description}
+                            </p>
+                          )}
+                          <a
+                            href={contribution.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-block break-all text-sm text-teal-800 underline"
+                          >
+                            {contribution.url}
+                          </a>
+                        </div>
+                        {!isEditing && isOwner && isPending && (
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                startEditingContribution(contribution)
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleDeleteMyContribution(contribution)
+                              }
+                              disabled={deletingContributionId !== null}
+                              className="rounded-md bg-red-700 px-3 py-2 text-xs font-medium text-white hover:bg-red-800 disabled:opacity-60"
+                            >
+                              {deletingContributionId === contribution.id
+                                ? "Withdrawing…"
+                                : "Withdraw"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {isEditing && contributionEditDraft && (
+                        <form
+                          className="mt-5 grid gap-3 border-t border-zinc-100 pt-4"
+                          onSubmit={(event) =>
+                            void handleSaveContributionEdit(
+                              event,
+                              contribution.id
+                            )
+                          }
+                        >
+                          <label className="grid gap-1 text-xs font-medium text-zinc-700">
+                            Title
+                            <input
+                              required
+                              maxLength={200}
+                              value={contributionEditDraft.title}
+                              onChange={(event) =>
+                                setContributionEditDraft((draft) =>
+                                  draft
+                                    ? { ...draft, title: event.target.value }
+                                    : draft
+                                )
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs font-medium text-zinc-700">
+                            Type
+                            <select
+                              value={contributionEditDraft.type}
+                              onChange={(event) =>
+                                setContributionEditDraft((draft) =>
+                                  draft
+                                    ? {
+                                        ...draft,
+                                        type: event.target
+                                          .value as ContributionType,
+                                      }
+                                    : draft
+                                )
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                            >
+                              {CONTRIBUTION_TYPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-xs font-medium text-zinc-700">
+                            HTTPS URL
+                            <input
+                              required
+                              type="url"
+                              value={contributionEditDraft.url}
+                              onChange={(event) =>
+                                setContributionEditDraft((draft) =>
+                                  draft
+                                    ? { ...draft, url: event.target.value }
+                                    : draft
+                                )
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs font-medium text-zinc-700">
+                            Description (optional)
+                            <textarea
+                              maxLength={2000}
+                              rows={3}
+                              value={contributionEditDraft.description ?? ""}
+                              onChange={(event) =>
+                                setContributionEditDraft((draft) =>
+                                  draft
+                                    ? {
+                                        ...draft,
+                                        description: event.target.value,
+                                      }
+                                    : draft
+                                )
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <div className="flex gap-2">
+                            <button
+                              type="submit"
+                              disabled={savingContributionId !== null}
+                              className="rounded-md bg-zinc-900 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                            >
+                              {savingContributionId === contribution.id
+                                ? "Saving…"
+                                : "Save changes"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingContributionId(null);
+                                setContributionEditDraft(null);
+                                setMyContributionsError(null);
+                              }}
+                              disabled={savingContributionId !== null}
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>

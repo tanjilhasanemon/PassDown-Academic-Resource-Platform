@@ -13,6 +13,7 @@ import type {
   ContributionPayload,
   ContributionModerationItem,
   ContributionSubmission,
+  ContributionUpdatePayload,
   CourseDetail,
   CourseSummary,
   LoginPayload,
@@ -119,6 +120,10 @@ async function request<T>(
       // Fallback to status message if body is not JSON
     }
     throw new ApiError(response.status, errorMessage);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return (await response.json()) as T;
@@ -251,4 +256,37 @@ export async function moderateContribution(
     `/contributions/${contributionId}/${action}`,
     { method: "PATCH" }
   );
+}
+
+/**
+ * Lists the authenticated user's Contributions and their review statuses (FR-09).
+ */
+export async function fetchMyContributions(): Promise<ContributionSubmission[]> {
+  return request<ContributionSubmission[]>("/contributions/mine", {
+    method: "GET",
+  });
+}
+
+/**
+ * Updates an owned pending Contribution (FR-09).
+ */
+export async function updateMyContribution(
+  contributionId: number,
+  payload: ContributionUpdatePayload
+): Promise<ContributionSubmission> {
+  return request<ContributionSubmission>(`/contributions/${contributionId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Withdraws an owned pending Contribution (FR-09).
+ */
+export async function deleteMyContribution(
+  contributionId: number
+): Promise<void> {
+  return request<void>(`/contributions/${contributionId}`, {
+    method: "DELETE",
+  });
 }

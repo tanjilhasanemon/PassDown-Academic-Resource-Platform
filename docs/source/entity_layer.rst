@@ -50,8 +50,8 @@ Data Access Repositories
    :show-inheritance:
 
 The Contribution repository joins course and submitter metadata for the
-moderation queue and uses a conditional update to prevent repeated status
-transitions.
+moderation queue, uses conditional updates for status transitions and owner
+edits, lists records by submitter, and supports authorized deletion.
 
 .. automodule:: app.repositories.request_repo
    :members:

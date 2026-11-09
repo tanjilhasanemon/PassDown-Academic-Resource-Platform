@@ -84,6 +84,37 @@ Example request and response:
        "created_at": "2026-11-07T10:30:00Z"
     }
 
+FR-09 Contribution Ownership API
+---------------------------------
+Authenticated users with the ``contributions:write`` scope can list their
+Contributions at ``GET /api/v1/contributions/mine``. The owner can edit a
+pending Contribution with ``PUT /api/v1/contributions/{contribution_id}``;
+status and submitter fields are not accepted as editable input. Owners can
+withdraw their pending Contribution with ``DELETE`` on the same path. A
+non-owner receives ``403``, a missing record ``404``, and an owner attempting
+to edit or withdraw an approved or rejected record receives ``409``. Admins
+may delete any Contribution; deleted records no longer appear in public or
+moderation listings.
+
+.. code-block:: text
+
+    PUT /api/v1/contributions/31 HTTP/1.1
+    Authorization: Bearer <access-token>
+    Content-Type: application/json
+
+    {"title": "Updated lecture slides", "type": "slides",
+     "url": "https://example.com/slides-v2.pdf",
+     "description": "Revised slides"}
+
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+
+    {"id": 31, "course_id": 12, "submitted_by": 7,
+     "title": "Updated lecture slides", "type": "slides",
+     "url": "https://example.com/slides-v2.pdf",
+     "description": "Revised slides", "status": "pending",
+     "created_at": "2026-11-07T10:30:00Z"}
+
 Pydantic Validation & Serialization Schemas
 -------------------------------------------
 .. automodule:: app.schemas.auth_schema

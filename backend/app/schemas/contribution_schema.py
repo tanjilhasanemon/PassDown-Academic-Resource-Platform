@@ -49,6 +49,12 @@ class ContributionCreate(BaseModel):
         return value
 
 
+class ContributionUpdate(ContributionCreate):
+    """Validated edit payload that disallows status and owner fields."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class ContributionRead(BaseModel):
     """Safe response schema for a persisted contribution submission."""
 

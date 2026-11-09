@@ -1,6 +1,6 @@
 """Contribution Submission HTTP Router (ECB Boundary Layer).
 
-Exposes the authenticated FR-07 course contribution submission endpoint.
+Exposes public approved-Contribution listing and authenticated FR-07 submission.
 """
 
 from fastapi import APIRouter, Depends, Security, status
@@ -14,8 +14,23 @@ from app.services.contribution_service import ContributionService
 
 router = APIRouter(
     prefix="/courses/{course_id}/contributions",
-    tags=["Contributions (FR-07)"],
+    tags=["Contributions (FR-07, FR-08)"],
 )
+
+
+@router.get(
+    "",
+    response_model=list[ContributionRead],
+    status_code=status.HTTP_200_OK,
+    summary="List approved public Contributions for a course (FR-08)",
+    responses={404: {"description": "The course does not exist."}},
+)
+def list_course_contributions(
+    course_id: int,
+    db: Session = Depends(get_db),
+) -> list[ContributionRead]:
+    """Returns approved Contributions only; pending and rejected stay hidden."""
+    return ContributionService.list_public_contributions(db, course_id=course_id)
 
 
 @router.post(

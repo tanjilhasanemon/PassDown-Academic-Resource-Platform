@@ -49,6 +49,10 @@ Data Access Repositories
    :undoc-members:
    :show-inheritance:
 
+The Contribution repository joins course and submitter metadata for the
+moderation queue and uses a conditional update to prevent repeated status
+transitions.
+
 .. automodule:: app.repositories.request_repo
    :members:
    :undoc-members:

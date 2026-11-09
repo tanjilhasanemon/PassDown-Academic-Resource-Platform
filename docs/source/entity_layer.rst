@@ -22,6 +22,11 @@ SQLAlchemy ORM Models
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: app.models.contribution
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: app.models.request
    :members:
    :undoc-members:
@@ -38,6 +43,15 @@ Data Access Repositories
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. automodule:: app.repositories.contribution_repo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+The Contribution repository joins course and submitter metadata for the
+moderation queue, uses conditional updates for status transitions and owner
+edits, lists records by submitter, and supports authorized deletion.
 
 .. automodule:: app.repositories.request_repo
    :members:

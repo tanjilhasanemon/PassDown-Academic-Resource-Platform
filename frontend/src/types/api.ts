@@ -23,6 +23,42 @@ export const SECURITY_SCOPES = {
 export type SecurityScope =
   (typeof SECURITY_SCOPES)[keyof typeof SECURITY_SCOPES];
 
+/** Resource types accepted by Contribution submission and editing (FR-07, FR-09). */
+export type ContributionType =
+  | "slides"
+  | "notes"
+  | "past_paper"
+  | "book"
+  | "other";
+
+/** Payload sent when submitting or editing a Contribution (FR-07, FR-09). */
+export interface ContributionPayload {
+  title: string;
+  type: ContributionType;
+  url: string;
+  description?: string | null;
+}
+
+/** Editable fields for an existing pending Contribution (FR-09). */
+export type ContributionUpdatePayload = ContributionPayload;
+
+/** Response returned after an authenticated contribution submission (FR-07). */
+export interface ContributionSubmission
+  extends Omit<ContributionPayload, "description"> {
+  id: number;
+  course_id: number;
+  submitted_by: number;
+  description: string | null;
+  status: string;
+  created_at: string;
+}
+
+/** Pending contribution metadata returned to authorized Admin moderators (FR-08). */
+export interface ContributionModerationItem extends ContributionSubmission {
+  course: CourseSummary;
+  submitter: UserProfile;
+}
+
 /** Safe user profile returned by `/api/v1/auth/register` and `/api/v1/auth/me` (FR-01). */
 export interface UserProfile {
   id: number;

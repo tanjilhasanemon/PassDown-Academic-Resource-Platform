@@ -10,6 +10,10 @@
  */
 
 import type {
+  ContributionPayload,
+  ContributionModerationItem,
+  ContributionSubmission,
+  ContributionUpdatePayload,
   CourseDetail,
   CourseSummary,
   LoginPayload,

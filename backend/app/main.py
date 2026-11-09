@@ -1,7 +1,8 @@
 """PassDown FastAPI Entrypoint (ECB Boundary Layer).
 
-Configures CORS (SRS NFR-04) and mounts `/api/v1` routers for Auth (FR-01, FR-02)
-and Courses (FR-03).
+Configures CORS (SRS NFR-04) and mounts `/api/v1` routers for Auth (FR-01, FR-02),
+Courses (FR-03), and Contribution submission, moderation, and management (FR-07,
+FR-08, and FR-09).
 """
 
 from fastapi import FastAPI

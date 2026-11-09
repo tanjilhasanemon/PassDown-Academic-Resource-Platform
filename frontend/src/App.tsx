@@ -18,10 +18,11 @@ import { useAuth } from "./context/AuthContext";
 import {
   ApiError,
   createCourseRequest,
+  deleteCourseRequest,
   fetchCourseRequests,
   fetchCourseDetailById,
   fetchPublicCourses,
-  moderateContribution,
+  fulfillCourseRequest,
   registerStudentAccount,
   submitCourseContribution,
   updateMyContribution,
@@ -177,6 +178,11 @@ export function App() {
   const [courseRequests, setCourseRequests] = useState<PublicResourceRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [requestsLoadError, setRequestsLoadError] = useState<string | null>(null);
+  const [requestActionError, setRequestActionError] = useState<string | null>(null);
+  const [activeRequestAction, setActiveRequestAction] = useState<{
+    requestId: number;
+    action: "fulfill" | "delete";
+  } | null>(null);
 
   // Contribution Submission State (FR-07)
   const [contributionTitle, setContributionTitle] = useState("");
@@ -497,230 +503,47 @@ export function App() {
     }
   };
 
-  // Submit an academic resource contribution for review (FR-07)
-  const handleContributionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmittingContribution || !selectedCourse) return;
-
-    const title = contributionTitle.trim();
-    const url = contributionUrl.trim();
-    const description = contributionDescription.trim();
-    if (!title || title.length > 200) {
-      setContributionError("Enter a title of 1 to 200 characters.");
-      setContributionSuccess(null);
-      return;
-    }
-    if (description.length > 2000) {
-      setContributionError("Description must be at most 2000 characters.");
-      setContributionSuccess(null);
-      return;
-    }
+  const handleFulfillRequest = async (requestId: number) => {
+    if (activeRequestAction || !selectedCourse) return;
+    setActiveRequestAction({ requestId, action: "fulfill" });
+    setRequestActionError(null);
     try {
-      if (new URL(url).protocol !== "https:") {
-        setContributionError("The resource URL must use HTTPS.");
-        setContributionSuccess(null);
-        return;
-      }
-    } catch {
-      setContributionError("Enter a valid HTTPS resource URL.");
-      setContributionSuccess(null);
-      return;
-    }
-
-    setContributionError(null);
-    setContributionSuccess(null);
-    setIsSubmittingContribution(true);
-    try {
-      const created = await submitCourseContribution(selectedCourse.id, {
-        title,
-        type: contributionType,
-        url,
-        description: description || undefined,
-      });
-      setContributionTitle("");
-      setContributionType("slides");
-      setContributionUrl("");
-      setContributionDescription("");
-      setContributionSuccess(
-        `Contribution #${created.id} submitted and is pending review.`
-      );
+      await fulfillCourseRequest(requestId);
+      await loadCourseRequests(selectedCourse.id);
+      showToast("success", `Request #${requestId} marked as fulfilled.`);
     } catch (err) {
-      setContributionError(
+      setRequestActionError(
         err instanceof ApiError
           ? `HTTP ${err.status}: ${err.message}`
-          : "Unable to reach the PassDown API. Check your connection and try again."
+          : "Unable to fulfill this request. Check your connection and try again."
       );
     } finally {
-      setIsSubmittingContribution(false);
+      setActiveRequestAction(null);
     }
   };
 
-  const loadPendingContributions = async () => {
-    setModerationError(null);
-    setModerationSuccess(null);
-    setIsLoadingModeration(true);
-    try {
-      setPendingContributions(await fetchPendingContributions());
-    } catch (err) {
-      setModerationError(
-        err instanceof ApiError
-          ? `HTTP ${err.status}: ${err.message}`
-          : "Unable to reach the PassDown API. Check your connection and try again."
-      );
-    } finally {
-      setIsLoadingModeration(false);
-    }
-  };
-
-  const handleModerateContribution = async (
-    contributionId: number,
-    action: "approve" | "reject"
-  ) => {
-    setModerationError(null);
-    setModerationSuccess(null);
-    setModeratingContributionId(contributionId);
-    try {
-      const updated = await moderateContribution(contributionId, action);
-      setPendingContributions((current) =>
-        current.filter((item) => item.id !== updated.id)
-      );
-      setModerationSuccess(
-        `Contribution #${updated.id} ${action === "approve" ? "approved" : "rejected"}.`
-      );
-    } catch (err) {
-      setModerationError(
-        err instanceof ApiError
-          ? `HTTP ${err.status}: ${err.message}`
-          : "Unable to reach the PassDown API. Check your connection and try again."
-      );
-    } finally {
-      setModeratingContributionId(null);
-    }
-  };
-
-  const loadMyContributions = async () => {
-    setMyContributionsError(null);
-    setMyContributionsSuccess(null);
-    setIsLoadingMyContributions(true);
-    try {
-      setMyContributions(await fetchMyContributions());
-    } catch (err) {
-      setMyContributionsError(
-        err instanceof ApiError
-          ? `HTTP ${err.status}: ${err.message}`
-          : "Unable to reach the PassDown API. Check your connection and try again."
-      );
-    } finally {
-      setIsLoadingMyContributions(false);
-    }
-  };
-
-  const startEditingContribution = (
-    contribution: ContributionSubmission
-  ) => {
-    setMyContributionsError(null);
-    setMyContributionsSuccess(null);
-    setEditingContributionId(contribution.id);
-    setContributionEditDraft({
-      title: contribution.title,
-      type: contribution.type,
-      url: contribution.url,
-      description: contribution.description ?? "",
-    });
-  };
-
-  const handleSaveContributionEdit = async (
-    event: React.FormEvent,
-    contributionId: number
-  ) => {
-    event.preventDefault();
-    if (!contributionEditDraft || savingContributionId !== null) return;
-
-    const title = contributionEditDraft.title.trim();
-    const url = contributionEditDraft.url.trim();
-    const description = contributionEditDraft.description?.trim() ?? "";
-    if (!title || title.length > 200) {
-      setMyContributionsError("Enter a title of 1 to 200 characters.");
-      return;
-    }
-    if (description.length > 2000) {
-      setMyContributionsError("Description must be at most 2000 characters.");
-      return;
-    }
-    try {
-      if (new URL(url).protocol !== "https:") {
-        setMyContributionsError("The resource URL must use HTTPS.");
-        return;
-      }
-    } catch {
-      setMyContributionsError("Enter a valid HTTPS resource URL.");
-      return;
-    }
-
-    setMyContributionsError(null);
-    setMyContributionsSuccess(null);
-    setSavingContributionId(contributionId);
-    try {
-      const updated = await updateMyContribution(contributionId, {
-        ...contributionEditDraft,
-        title,
-        url,
-        description: description || undefined,
-      });
-      setMyContributions((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item))
-      );
-      setEditingContributionId(null);
-      setContributionEditDraft(null);
-      setMyContributionsSuccess(
-        `Contribution #${updated.id} updated and remains pending review.`
-      );
-    } catch (err) {
-      setMyContributionsError(
-        err instanceof ApiError
-          ? `HTTP ${err.status}: ${err.message}`
-          : "Unable to reach the PassDown API. Check your connection and try again."
-      );
-    } finally {
-      setSavingContributionId(null);
-    }
-  };
-
-  const handleDeleteMyContribution = async (
-    contribution: ContributionSubmission
-  ) => {
+  const handleDeleteRequest = async (requestId: number) => {
     if (
-      deletingContributionId !== null ||
-      !window.confirm(
-        `Withdraw "${contribution.title}"? This permanently deletes the pending Contribution.`
-      )
+      activeRequestAction ||
+      !selectedCourse ||
+      !window.confirm("Delete this request? This action cannot be undone.")
     ) {
       return;
     }
-
-    setMyContributionsError(null);
-    setMyContributionsSuccess(null);
-    setDeletingContributionId(contribution.id);
+    setActiveRequestAction({ requestId, action: "delete" });
+    setRequestActionError(null);
     try {
-      await deleteMyContribution(contribution.id);
-      setMyContributions((current) =>
-        current.filter((item) => item.id !== contribution.id)
-      );
-      setMyContributionsSuccess(
-        `Contribution #${contribution.id} withdrawn.`
-      );
-      if (editingContributionId === contribution.id) {
-        setEditingContributionId(null);
-        setContributionEditDraft(null);
-      }
+      await deleteCourseRequest(requestId);
+      await loadCourseRequests(selectedCourse.id);
+      showToast("success", `Request #${requestId} deleted.`);
     } catch (err) {
-      setMyContributionsError(
+      setRequestActionError(
         err instanceof ApiError
           ? `HTTP ${err.status}: ${err.message}`
-          : "Unable to reach the PassDown API. Check your connection and try again."
+          : "Unable to delete this request. Check your connection and try again."
       );
     } finally {
-      setDeletingContributionId(null);
+      setActiveRequestAction(null);
     }
   };
 
@@ -1602,6 +1425,11 @@ export function App() {
                     <p className="mt-1 text-xs text-zinc-500">
                       {selectedCourse.code}: {selectedCourse.title}
                     </p>
+                    {requestActionError && (
+                      <p role="alert" className="mt-3 text-xs text-red-700">
+                        {requestActionError}
+                      </p>
+                    )}
                     {isLoadingRequests ? (
                       <p role="status" className="mt-4 text-xs text-zinc-500">
                         Loading requests...
@@ -1631,14 +1459,47 @@ export function App() {
                               <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm text-zinc-800">
                                 {courseRequest.description}
                               </p>
-                              <span
-                                className={`shrink-0 rounded px-2 py-1 text-[11px] font-medium capitalize ${courseRequest.status === "open"
-                                  ? "bg-emerald-50 text-emerald-800"
-                                  : "bg-zinc-100 text-zinc-700"
-                                  }`}
-                              >
-                                {courseRequest.status}
-                              </span>
+                              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                <span
+                                  className={`rounded px-2 py-1 text-[11px] font-medium capitalize ${courseRequest.status === "open"
+                                    ? "bg-emerald-50 text-emerald-800"
+                                    : "bg-zinc-100 text-zinc-700"
+                                    }`}
+                                >
+                                  {courseRequest.status}
+                                </span>
+                                {user &&
+                                  scopes.includes(SECURITY_SCOPES.REQUESTS_WRITE) &&
+                                  (role === "admin" ||
+                                    user.id === courseRequest.submitted_by) && (
+                                    <div className="flex items-center gap-1.5">
+                                      {courseRequest.status === "open" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleFulfillRequest(courseRequest.id)}
+                                          disabled={activeRequestAction !== null}
+                                          className="rounded border border-emerald-700 px-2 py-1 text-[11px] font-medium text-emerald-800 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                          {activeRequestAction?.requestId === courseRequest.id &&
+                                            activeRequestAction.action === "fulfill"
+                                            ? "Fulfilling..."
+                                            : "Fulfill"}
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteRequest(courseRequest.id)}
+                                        disabled={activeRequestAction !== null}
+                                        className="rounded border border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        {activeRequestAction?.requestId === courseRequest.id &&
+                                          activeRequestAction.action === "delete"
+                                          ? "Deleting..."
+                                          : "Delete"}
+                                      </button>
+                                    </div>
+                                  )}
+                              </div>
                             </div>
                             <p className="mt-2 text-xs text-zinc-500">
                               Requested by {courseRequest.author_name} ·{" "}

@@ -231,3 +231,21 @@ export async function fetchCourseRequests(
     true
   );
 }
+
+/**
+ * Marks an owned or Admin-managed request fulfilled (FR-12).
+ */
+export async function fulfillCourseRequest(
+  requestId: number
+): Promise<ResourceRequest> {
+  return request<ResourceRequest>(`/requests/${requestId}/fulfill`, {
+    method: "PATCH",
+  });
+}
+
+/**
+ * Deletes an owned or Admin-managed request (FR-12).
+ */
+export async function deleteCourseRequest(requestId: number): Promise<void> {
+  return request<void>(`/requests/${requestId}`, { method: "DELETE" });
+}

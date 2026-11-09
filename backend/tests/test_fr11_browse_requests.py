@@ -87,13 +87,14 @@ def test_fr11_guest_lists_requests_with_public_fields_and_statuses(
     for item in items:
         assert set(item) == {
             "id",
+            "submitted_by",
             "description",
             "status",
             "author_name",
             "created_at",
         }
         assert "email" not in item
-        assert "submitted_by" not in item
+        assert isinstance(item["submitted_by"], int)
         assert item["created_at"]
 
 

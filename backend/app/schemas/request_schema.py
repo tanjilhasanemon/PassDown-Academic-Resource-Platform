@@ -35,9 +35,10 @@ class RequestRead(BaseModel):
 
 
 class RequestPublicRead(BaseModel):
-    """Public request fields, excluding account identifiers and contact data."""
+    """Public request fields, excluding user contact and credential data."""
 
     id: int
+    submitted_by: int
     description: str
     status: str
     author_name: str

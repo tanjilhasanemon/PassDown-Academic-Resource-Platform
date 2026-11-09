@@ -134,6 +134,7 @@ export interface ResourceRequest {
 /** Public request fields returned by `GET /api/v1/courses/{id}/requests` (FR-11). */
 export interface PublicResourceRequest {
   id: number;
+  submitted_by: number;
   description: string;
   status: string;
   author_name: string;

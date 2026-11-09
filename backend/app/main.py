@@ -11,13 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers.auth_router import router as auth_router
 from app.routers.course_router import router as course_router
-from app.routers.contribution_router import router as contribution_router
-from app.routers.contribution_management_router import (
-    router as contribution_management_router,
-)
-from app.routers.contribution_moderation_router import (
-    router as contribution_moderation_router,
-)
+from app.routers.request_router import router as request_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -35,9 +29,7 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 app.include_router(course_router, prefix=settings.API_V1_PREFIX)
-app.include_router(contribution_router, prefix=settings.API_V1_PREFIX)
-app.include_router(contribution_management_router, prefix=settings.API_V1_PREFIX)
-app.include_router(contribution_moderation_router, prefix=settings.API_V1_PREFIX)
+app.include_router(request_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/api/v1/health", tags=["Health"])

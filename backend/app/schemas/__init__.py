@@ -18,6 +18,8 @@ from app.schemas.course_schema import (
 from app.schemas.request_schema import RequestCreate, RequestPublicRead, RequestRead
 
 __all__ = [
+    "ContributionCreate",
+    "ContributionRead",
     "CourseDetailRead",
     "CourseRead",
     "CourseResourceLinks",

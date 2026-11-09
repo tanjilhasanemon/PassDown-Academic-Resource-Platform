@@ -1,6 +1,7 @@
 """Business Logic and RBAC Control Services (ECB Control Layer)."""
 
 from app.services.auth_service import AuthService
+from app.services.contribution_service import ContributionService
 from app.services.course_service import CourseService
 
-__all__ = ["AuthService", "CourseService"]
+__all__ = ["AuthService", "ContributionService", "CourseService"]

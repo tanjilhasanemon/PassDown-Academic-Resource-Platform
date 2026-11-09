@@ -22,6 +22,41 @@ HTTP Route Controllers (Routers)
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: app.routers.contribution_router
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: app.routers.contribution_moderation_router
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+FR-08 Contribution Moderation API
+---------------------------------
+``GET /api/v1/contributions/pending`` requires the ``contributions:moderate``
+scope and returns pending contributions with course and submitter metadata.
+``PATCH /api/v1/contributions/{id}/approve`` and
+``PATCH /api/v1/contributions/{id}/reject`` transition pending records without a
+request body. Both return ``404`` for an unknown contribution and ``409`` when
+the record has already been moderated. Approved records appear in the public
+``GET /api/v1/courses/{course_id}/contributions`` response; pending and rejected
+records remain hidden.
+
+.. code-block:: text
+
+    PATCH /api/v1/contributions/31/approve HTTP/1.1
+    Authorization: Bearer <admin-token>
+
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+
+    {"id": 31, "course_id": 12, "submitted_by": 7,
+     "title": "Lecture slides", "type": "slides",
+     "url": "https://example.com/slides.pdf",
+     "description": null, "status": "approved",
+     "created_at": "2026-11-07T10:30:00Z"}
+
 The course router also exposes ``POST /api/v1/courses/{course_id}/requests``.
 It requires the ``requests:write`` scope, returns ``201 Created`` with the
 request fields, returns ``404`` for an unknown course, and returns ``422`` for
@@ -80,6 +115,11 @@ Pydantic Validation & Serialization Schemas
    :show-inheritance:
 
 .. automodule:: app.schemas.course_schema
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: app.schemas.contribution_schema
    :members:
    :undoc-members:
    :show-inheritance:

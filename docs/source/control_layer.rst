@@ -32,6 +32,16 @@ Domain Business Services
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: app.services.contribution_service
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+The Contribution service enforces FR-08's pending-only status transitions,
+conflict handling, and approved-only public visibility. For FR-09, it checks
+ownership before editing or withdrawing pending records; Admin deletion is
+authorized for Contributions of any status.
+
 .. automodule:: app.services.request_service
    :members:
    :undoc-members:

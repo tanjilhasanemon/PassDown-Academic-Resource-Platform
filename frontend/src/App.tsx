@@ -1,5 +1,5 @@
 /**
- * PassDown Primary Application Workspace (Boundary Layer — FR-01, FR-02, FR-03).
+ * PassDown Primary Application Workspace (Boundary Layer — FR-01, FR-02, FR-03, FR-07, FR-08, FR-09).
  *
  * Implements a Linear/Geist-inspired academic interface featuring:
  * 1. Top Command Header with active Actor/Role badge, In-Memory JWT Indicator,
@@ -21,7 +21,10 @@ import {
   fetchCourseRequests,
   fetchCourseDetailById,
   fetchPublicCourses,
+  moderateContribution,
   registerStudentAccount,
+  submitCourseContribution,
+  updateMyContribution,
   verifySecurityScopeEndpoint,
 } from "./services/apiClient";
 import type {
@@ -83,6 +86,17 @@ const FALLBACK_DEMO_COURSES: CourseSummary[] = [
     semester_offered: "Spring 2027",
     created_at: "2026-10-15T08:00:00Z",
   },
+];
+
+const CONTRIBUTION_TYPE_OPTIONS: {
+  value: ContributionType;
+  label: string;
+}[] = [
+  { value: "slides", label: "Slides" },
+  { value: "notes", label: "Notes" },
+  { value: "past_paper", label: "Past paper" },
+  { value: "book", label: "Book" },
+  { value: "other", label: "Other" },
 ];
 
 const SCOPE_MATRIX_ITEMS = [
@@ -163,6 +177,61 @@ export function App() {
   const [courseRequests, setCourseRequests] = useState<PublicResourceRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [requestsLoadError, setRequestsLoadError] = useState<string | null>(null);
+
+  // Contribution Submission State (FR-07)
+  const [contributionTitle, setContributionTitle] = useState("");
+  const [contributionType, setContributionType] =
+    useState<ContributionType>("slides");
+  const [contributionUrl, setContributionUrl] = useState("");
+  const [contributionDescription, setContributionDescription] = useState("");
+  const [contributionError, setContributionError] = useState<string | null>(
+    null
+  );
+  const [contributionSuccess, setContributionSuccess] = useState<string | null>(
+    null
+  );
+  const [isSubmittingContribution, setIsSubmittingContribution] =
+    useState(false);
+
+  // Contribution Moderation State (FR-08)
+  const [activeView, setActiveView] = useState<
+    "catalogue" | "moderation" | "mine"
+  >("catalogue");
+  const [pendingContributions, setPendingContributions] = useState<
+    ContributionModerationItem[]
+  >([]);
+  const [isLoadingModeration, setIsLoadingModeration] = useState(false);
+  const [moderationError, setModerationError] = useState<string | null>(null);
+  const [moderationSuccess, setModerationSuccess] = useState<string | null>(
+    null
+  );
+  const [moderatingContributionId, setModeratingContributionId] = useState<
+    number | null
+  >(null);
+
+  // My Contributions State (FR-09)
+  const [myContributions, setMyContributions] = useState<
+    ContributionSubmission[]
+  >([]);
+  const [isLoadingMyContributions, setIsLoadingMyContributions] =
+    useState(false);
+  const [myContributionsError, setMyContributionsError] = useState<
+    string | null
+  >(null);
+  const [myContributionsSuccess, setMyContributionsSuccess] = useState<
+    string | null
+  >(null);
+  const [editingContributionId, setEditingContributionId] = useState<
+    number | null
+  >(null);
+  const [contributionEditDraft, setContributionEditDraft] =
+    useState<ContributionUpdatePayload | null>(null);
+  const [savingContributionId, setSavingContributionId] = useState<
+    number | null
+  >(null);
+  const [deletingContributionId, setDeletingContributionId] = useState<
+    number | null
+  >(null);
 
   // Modals & Feedback State (FR-01 & FR-02)
   const [activeModal, setActiveModal] = useState<ActiveModal>("none");
@@ -249,6 +318,15 @@ export function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeModal]);
+
+  useEffect(() => {
+    if (!canModerateContributions && activeView === "moderation") {
+      setActiveView("catalogue");
+    }
+    if (!canManageContributions && activeView === "mine") {
+      setActiveView("catalogue");
+    }
+  }, [activeView, canManageContributions, canModerateContributions]);
 
   // Load courses from GET /api/v1/courses?search= (FR-03)
   const loadCourses = useCallback(async (query: string) => {
@@ -419,6 +497,233 @@ export function App() {
     }
   };
 
+  // Submit an academic resource contribution for review (FR-07)
+  const handleContributionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmittingContribution || !selectedCourse) return;
+
+    const title = contributionTitle.trim();
+    const url = contributionUrl.trim();
+    const description = contributionDescription.trim();
+    if (!title || title.length > 200) {
+      setContributionError("Enter a title of 1 to 200 characters.");
+      setContributionSuccess(null);
+      return;
+    }
+    if (description.length > 2000) {
+      setContributionError("Description must be at most 2000 characters.");
+      setContributionSuccess(null);
+      return;
+    }
+    try {
+      if (new URL(url).protocol !== "https:") {
+        setContributionError("The resource URL must use HTTPS.");
+        setContributionSuccess(null);
+        return;
+      }
+    } catch {
+      setContributionError("Enter a valid HTTPS resource URL.");
+      setContributionSuccess(null);
+      return;
+    }
+
+    setContributionError(null);
+    setContributionSuccess(null);
+    setIsSubmittingContribution(true);
+    try {
+      const created = await submitCourseContribution(selectedCourse.id, {
+        title,
+        type: contributionType,
+        url,
+        description: description || undefined,
+      });
+      setContributionTitle("");
+      setContributionType("slides");
+      setContributionUrl("");
+      setContributionDescription("");
+      setContributionSuccess(
+        `Contribution #${created.id} submitted and is pending review.`
+      );
+    } catch (err) {
+      setContributionError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setIsSubmittingContribution(false);
+    }
+  };
+
+  const loadPendingContributions = async () => {
+    setModerationError(null);
+    setModerationSuccess(null);
+    setIsLoadingModeration(true);
+    try {
+      setPendingContributions(await fetchPendingContributions());
+    } catch (err) {
+      setModerationError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setIsLoadingModeration(false);
+    }
+  };
+
+  const handleModerateContribution = async (
+    contributionId: number,
+    action: "approve" | "reject"
+  ) => {
+    setModerationError(null);
+    setModerationSuccess(null);
+    setModeratingContributionId(contributionId);
+    try {
+      const updated = await moderateContribution(contributionId, action);
+      setPendingContributions((current) =>
+        current.filter((item) => item.id !== updated.id)
+      );
+      setModerationSuccess(
+        `Contribution #${updated.id} ${action === "approve" ? "approved" : "rejected"}.`
+      );
+    } catch (err) {
+      setModerationError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setModeratingContributionId(null);
+    }
+  };
+
+  const loadMyContributions = async () => {
+    setMyContributionsError(null);
+    setMyContributionsSuccess(null);
+    setIsLoadingMyContributions(true);
+    try {
+      setMyContributions(await fetchMyContributions());
+    } catch (err) {
+      setMyContributionsError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setIsLoadingMyContributions(false);
+    }
+  };
+
+  const startEditingContribution = (
+    contribution: ContributionSubmission
+  ) => {
+    setMyContributionsError(null);
+    setMyContributionsSuccess(null);
+    setEditingContributionId(contribution.id);
+    setContributionEditDraft({
+      title: contribution.title,
+      type: contribution.type,
+      url: contribution.url,
+      description: contribution.description ?? "",
+    });
+  };
+
+  const handleSaveContributionEdit = async (
+    event: React.FormEvent,
+    contributionId: number
+  ) => {
+    event.preventDefault();
+    if (!contributionEditDraft || savingContributionId !== null) return;
+
+    const title = contributionEditDraft.title.trim();
+    const url = contributionEditDraft.url.trim();
+    const description = contributionEditDraft.description?.trim() ?? "";
+    if (!title || title.length > 200) {
+      setMyContributionsError("Enter a title of 1 to 200 characters.");
+      return;
+    }
+    if (description.length > 2000) {
+      setMyContributionsError("Description must be at most 2000 characters.");
+      return;
+    }
+    try {
+      if (new URL(url).protocol !== "https:") {
+        setMyContributionsError("The resource URL must use HTTPS.");
+        return;
+      }
+    } catch {
+      setMyContributionsError("Enter a valid HTTPS resource URL.");
+      return;
+    }
+
+    setMyContributionsError(null);
+    setMyContributionsSuccess(null);
+    setSavingContributionId(contributionId);
+    try {
+      const updated = await updateMyContribution(contributionId, {
+        ...contributionEditDraft,
+        title,
+        url,
+        description: description || undefined,
+      });
+      setMyContributions((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item))
+      );
+      setEditingContributionId(null);
+      setContributionEditDraft(null);
+      setMyContributionsSuccess(
+        `Contribution #${updated.id} updated and remains pending review.`
+      );
+    } catch (err) {
+      setMyContributionsError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setSavingContributionId(null);
+    }
+  };
+
+  const handleDeleteMyContribution = async (
+    contribution: ContributionSubmission
+  ) => {
+    if (
+      deletingContributionId !== null ||
+      !window.confirm(
+        `Withdraw "${contribution.title}"? This permanently deletes the pending Contribution.`
+      )
+    ) {
+      return;
+    }
+
+    setMyContributionsError(null);
+    setMyContributionsSuccess(null);
+    setDeletingContributionId(contribution.id);
+    try {
+      await deleteMyContribution(contribution.id);
+      setMyContributions((current) =>
+        current.filter((item) => item.id !== contribution.id)
+      );
+      setMyContributionsSuccess(
+        `Contribution #${contribution.id} withdrawn.`
+      );
+      if (editingContributionId === contribution.id) {
+        setEditingContributionId(null);
+        setContributionEditDraft(null);
+      }
+    } catch (err) {
+      setMyContributionsError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setDeletingContributionId(null);
+    }
+  };
+
   // Open /auth/me Modal (FR-01)
   const handleOpenProfile = async () => {
     setActiveModal("profile");
@@ -529,6 +834,47 @@ export function App() {
           <div className="flex items-center gap-2.5">
             {user ? (
               <>
+                {canModerateContributions && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveView("moderation");
+                      void loadPendingContributions();
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition ${
+                      activeView === "moderation"
+                        ? "bg-zinc-900 text-white border-zinc-900"
+                        : "text-zinc-700 hover:bg-zinc-100 border-zinc-300"
+                    }`}
+                  >
+                    Moderation Queue
+                  </button>
+                )}
+                {canManageContributions && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveView("mine");
+                      void loadMyContributions();
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition ${
+                      activeView === "mine"
+                        ? "bg-zinc-900 text-white border-zinc-900"
+                        : "text-zinc-700 hover:bg-zinc-100 border-zinc-300"
+                    }`}
+                  >
+                    My Contributions
+                  </button>
+                )}
+                {activeView !== "catalogue" && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveView("catalogue")}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium text-zinc-700 hover:bg-zinc-100 border border-zinc-300"
+                  >
+                    Course Catalogue
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => void handleOpenProfile()}
@@ -628,6 +974,386 @@ export function App() {
 
       {/* Main Workspace Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+        {activeView === "moderation" && canModerateContributions ? (
+          <section aria-labelledby="moderation-queue-title">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs text-zinc-500">
+                  ADMIN • FR-08
+                </p>
+                <h1
+                  id="moderation-queue-title"
+                  className="mt-1 text-2xl font-bold text-zinc-900"
+                >
+                  Contribution Moderation Queue
+                </h1>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Review submissions before they become public.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadPendingContributions()}
+                disabled={isLoadingModeration}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60"
+              >
+                Refresh queue
+              </button>
+            </div>
+
+            {moderationError && (
+              <p
+                role="alert"
+                className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              >
+                {moderationError}
+              </p>
+            )}
+            {moderationSuccess && (
+              <p
+                role="status"
+                className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+              >
+                {moderationSuccess}
+              </p>
+            )}
+            {isLoadingModeration ? (
+              <p role="status" className="rounded-xl border bg-white p-8 text-center text-sm text-zinc-600">
+                Loading pending contributions…
+              </p>
+            ) : pendingContributions.length === 0 && !moderationError ? (
+              <p className="rounded-xl border bg-white p-8 text-center text-sm text-zinc-600">
+                no pending contributions
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {pendingContributions.map((contribution) => (
+                  <article
+                    key={contribution.id}
+                    className="rounded-xl border border-zinc-200 bg-white p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-base font-semibold text-zinc-900">
+                            {contribution.title}
+                          </h2>
+                          <span className="rounded bg-zinc-100 px-2 py-0.5 font-mono text-xs text-zinc-700">
+                            {contribution.type}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-600">
+                          {contribution.course.code} — {contribution.course.title}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          Submitted by {contribution.submitter.name} (
+                          {contribution.submitter.email}) on{" "}
+                          {new Date(contribution.created_at).toLocaleString()}
+                        </p>
+                        {contribution.description && (
+                          <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">
+                            {contribution.description}
+                          </p>
+                        )}
+                        <a
+                          href={contribution.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-block break-all text-sm text-teal-800 underline"
+                        >
+                          {contribution.url}
+                        </a>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleModerateContribution(
+                              contribution.id,
+                              "approve"
+                            )
+                          }
+                          disabled={moderatingContributionId !== null}
+                          className="rounded-md bg-emerald-700 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {moderatingContributionId === contribution.id
+                            ? "Saving…"
+                            : "Approve"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleModerateContribution(
+                              contribution.id,
+                              "reject"
+                            )
+                          }
+                          disabled={moderatingContributionId !== null}
+                          className="rounded-md bg-red-700 px-3 py-2 text-xs font-medium text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {moderatingContributionId === contribution.id
+                            ? "Saving…"
+                            : "Reject"}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : activeView === "mine" && canManageContributions ? (
+          <section aria-labelledby="my-contributions-title">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs text-zinc-500">
+                  {user?.role.toUpperCase()} • FR-09
+                </p>
+                <h1
+                  id="my-contributions-title"
+                  className="mt-1 text-2xl font-bold text-zinc-900"
+                >
+                  My Contributions
+                </h1>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Track review status and update or withdraw pending submissions.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadMyContributions()}
+                disabled={isLoadingMyContributions}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {myContributionsError && (
+              <p
+                role="alert"
+                className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              >
+                {myContributionsError}
+              </p>
+            )}
+            {myContributionsSuccess && (
+              <p
+                role="status"
+                className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+              >
+                {myContributionsSuccess}
+              </p>
+            )}
+
+            {isLoadingMyContributions ? (
+              <p
+                role="status"
+                className="rounded-xl border bg-white p-8 text-center text-sm text-zinc-600"
+              >
+                Loading your Contributions…
+              </p>
+            ) : myContributions.length === 0 && !myContributionsError ? (
+              <p className="rounded-xl border bg-white p-8 text-center text-sm text-zinc-600">
+                You have not submitted any Contributions yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {myContributions.map((contribution) => {
+                  const isOwner = user?.id === contribution.submitted_by;
+                  const isPending = contribution.status === "pending";
+                  const isEditing =
+                    editingContributionId === contribution.id &&
+                    contributionEditDraft !== null;
+                  return (
+                    <article
+                      key={contribution.id}
+                      className="rounded-xl border border-zinc-200 bg-white p-5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-base font-semibold text-zinc-900">
+                              {contribution.title}
+                            </h2>
+                            <span className="rounded bg-zinc-100 px-2 py-0.5 font-mono text-xs text-zinc-700">
+                              {contribution.type}
+                            </span>
+                            <span
+                              className={`rounded px-2 py-0.5 font-mono text-xs ${
+                                contribution.status === "approved"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : contribution.status === "rejected"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-amber-100 text-amber-800"
+                              }`}
+                            >
+                              {contribution.status}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Course #{contribution.course_id} · Submitted{" "}
+                            {new Date(contribution.created_at).toLocaleString()}
+                          </p>
+                          {contribution.description && (
+                            <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">
+                              {contribution.description}
+                            </p>
+                          )}
+                          <a
+                            href={contribution.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-block break-all text-sm text-teal-800 underline"
+                          >
+                            {contribution.url}
+                          </a>
+                        </div>
+                        {!isEditing && isOwner && isPending && (
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                startEditingContribution(contribution)
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleDeleteMyContribution(contribution)
+                              }
+                              disabled={deletingContributionId !== null}
+                              className="rounded-md bg-red-700 px-3 py-2 text-xs font-medium text-white hover:bg-red-800 disabled:opacity-60"
+                            >
+                              {deletingContributionId === contribution.id
+                                ? "Withdrawing…"
+                                : "Withdraw"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {isEditing && contributionEditDraft && (
+                        <form
+                          className="mt-5 grid gap-3 border-t border-zinc-100 pt-4"
+                          onSubmit={(event) =>
+                            void handleSaveContributionEdit(
+                              event,
+                              contribution.id
+                            )
+                          }
+                        >
+                          <label className="grid gap-1 text-xs font-medium text-zinc-700">
+                            Title
+                            <input
+                              required
+                              maxLength={200}
+                              value={contributionEditDraft.title}
+                              onChange={(event) =>
+                                setContributionEditDraft((draft) =>
+                                  draft
+                                    ? { ...draft, title: event.target.value }
+                                    : draft
+                                )
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs font-medium text-zinc-700">
+                            Type
+                            <select
+                              value={contributionEditDraft.type}
+                              onChange={(event) =>
+                                setContributionEditDraft((draft) =>
+                                  draft
+                                    ? {
+                                        ...draft,
+                                        type: event.target
+                                          .value as ContributionType,
+                                      }
+                                    : draft
+                                )
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                            >
+                              {CONTRIBUTION_TYPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-xs font-medium text-zinc-700">
+                            HTTPS URL
+                            <input
+                              required
+                              type="url"
+                              value={contributionEditDraft.url}
+                              onChange={(event) =>
+                                setContributionEditDraft((draft) =>
+                                  draft
+                                    ? { ...draft, url: event.target.value }
+                                    : draft
+                                )
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs font-medium text-zinc-700">
+                            Description (optional)
+                            <textarea
+                              maxLength={2000}
+                              rows={3}
+                              value={contributionEditDraft.description ?? ""}
+                              onChange={(event) =>
+                                setContributionEditDraft((draft) =>
+                                  draft
+                                    ? {
+                                        ...draft,
+                                        description: event.target.value,
+                                      }
+                                    : draft
+                                )
+                              }
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <div className="flex gap-2">
+                            <button
+                              type="submit"
+                              disabled={savingContributionId !== null}
+                              className="rounded-md bg-zinc-900 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                            >
+                              {savingContributionId === contribution.id
+                                ? "Saving…"
+                                : "Save changes"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingContributionId(null);
+                                setContributionEditDraft(null);
+                                setMyContributionsError(null);
+                              }}
+                              disabled={savingContributionId !== null}
+                              className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        ) : (
+          <>
         {/* Workspace Hero & Search Bar (FR-03) */}
         <div className="bg-white border border-zinc-200 rounded-xl p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
@@ -967,6 +1693,170 @@ export function App() {
                     </div>
                   )}
                 </section>
+              ) : activeDetailTab === "contributions" ? (
+                <section
+                  aria-labelledby="contribution-form-title"
+                  className="max-w-2xl space-y-4"
+                >
+                  <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50/70 p-4">
+                    <p className="text-xs text-zinc-700">
+                      Approved materials are available at{" "}
+                      <code className="font-mono text-zinc-900">
+                        {selectedCourse.resource_links.approved_contributions}
+                      </code>
+                      . Pending submissions remain private until approved.
+                    </p>
+                  </div>
+                  <div>
+                    <h3
+                      id="contribution-form-title"
+                      className="text-sm font-semibold text-zinc-900"
+                    >
+                      Submit a contribution
+                    </h3>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      For {selectedCourse.code}: {selectedCourse.title}
+                    </p>
+                  </div>
+                  {user &&
+                  scopes.includes(SECURITY_SCOPES.CONTRIBUTIONS_WRITE) ? (
+                    <form
+                      onSubmit={(event) =>
+                        void handleContributionSubmit(event)
+                      }
+                      className="space-y-3"
+                    >
+                      <div>
+                        <label
+                          htmlFor="contribution-title"
+                          className="block text-xs font-medium text-zinc-700"
+                        >
+                          Title
+                        </label>
+                        <input
+                          id="contribution-title"
+                          value={contributionTitle}
+                          onChange={(event) => {
+                            setContributionTitle(event.target.value);
+                            setContributionError(null);
+                            setContributionSuccess(null);
+                          }}
+                          maxLength={200}
+                          required
+                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="contribution-type"
+                          className="block text-xs font-medium text-zinc-700"
+                        >
+                          Resource type
+                        </label>
+                        <select
+                          id="contribution-type"
+                          value={contributionType}
+                          onChange={(event) => {
+                            const selectedType =
+                              CONTRIBUTION_TYPE_OPTIONS.find(
+                                ({ value }) => value === event.target.value
+                              )?.value;
+                            if (selectedType) {
+                              setContributionType(selectedType);
+                            }
+                            setContributionError(null);
+                            setContributionSuccess(null);
+                          }}
+                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        >
+                          {CONTRIBUTION_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="contribution-url"
+                          className="block text-xs font-medium text-zinc-700"
+                        >
+                          HTTPS resource URL
+                        </label>
+                        <input
+                          id="contribution-url"
+                          type="url"
+                          value={contributionUrl}
+                          onChange={(event) => {
+                            setContributionUrl(event.target.value);
+                            setContributionError(null);
+                            setContributionSuccess(null);
+                          }}
+                          required
+                          placeholder="https://example.com/resource"
+                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="contribution-description"
+                          className="block text-xs font-medium text-zinc-700"
+                        >
+                          Description (optional)
+                        </label>
+                        <textarea
+                          id="contribution-description"
+                          value={contributionDescription}
+                          onChange={(event) => {
+                            setContributionDescription(event.target.value);
+                            setContributionError(null);
+                            setContributionSuccess(null);
+                          }}
+                          rows={4}
+                          maxLength={2000}
+                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      {contributionError && (
+                        <p role="alert" className="text-xs text-red-700">
+                          {contributionError}
+                        </p>
+                      )}
+                      {contributionSuccess && (
+                        <p role="status" className="text-xs text-emerald-800">
+                          {contributionSuccess}
+                        </p>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={isSubmittingContribution}
+                        className="rounded-md bg-zinc-900 px-4 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSubmittingContribution
+                          ? "Submitting..."
+                          : "Submit for review"}
+                      </button>
+                    </form>
+                  ) : user ? (
+                    <p className="text-xs text-amber-800" role="status">
+                      Your account does not have permission to submit
+                      contributions.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-xs text-zinc-600">
+                        Sign in to submit a contribution.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal("login")}
+                        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+                      >
+                        Sign in
+                      </button>
+                    </div>
+                  )}
+                </section>
               ) : (
                 <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50/70 p-5 text-center">
                   <p className="text-xs font-mono text-zinc-700">
@@ -1104,6 +1994,8 @@ export function App() {
               </tbody>
             </table>
           </div>
+        )}
+          </>
         )}
       </main>
 

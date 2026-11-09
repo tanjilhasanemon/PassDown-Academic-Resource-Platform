@@ -5,6 +5,7 @@ remain decoupled from raw SQL queries (SRS §2.1 & NFR-09).
 """
 
 from app.repositories.course_repo import CourseRepository
+from app.repositories.contribution_repo import ContributionRepository
 from app.repositories.user_repo import UserRepository
 
-__all__ = ["CourseRepository", "UserRepository"]
+__all__ = ["ContributionRepository", "CourseRepository", "UserRepository"]

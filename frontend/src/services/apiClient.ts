@@ -10,6 +10,10 @@
  */
 
 import type {
+  ContributionPayload,
+  ContributionModerationItem,
+  ContributionSubmission,
+  ContributionUpdatePayload,
   CourseDetail,
   CourseSummary,
   LoginPayload,
@@ -117,6 +121,10 @@ async function request<T>(
       // Fallback to status message if body is not JSON
     }
     throw new ApiError(response.status, errorMessage);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return (await response.json()) as T;

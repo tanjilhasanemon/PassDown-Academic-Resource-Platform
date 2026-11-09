@@ -22,6 +22,11 @@ HTTP Route Controllers (Routers)
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: app.routers.contribution_router
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 The course router also exposes ``POST /api/v1/courses/{course_id}/requests``.
 It requires the ``requests:write`` scope, returns ``201 Created`` with the
 request fields, returns ``404`` for an unknown course, and returns ``422`` for
@@ -57,6 +62,11 @@ Pydantic Validation & Serialization Schemas
    :show-inheritance:
 
 .. automodule:: app.schemas.course_schema
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: app.schemas.contribution_schema
    :members:
    :undoc-members:
    :show-inheritance:

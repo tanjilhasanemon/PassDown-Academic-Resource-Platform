@@ -10,6 +10,8 @@
  */
 
 import type {
+  ContributionPayload,
+  ContributionSubmission,
   CourseDetail,
   CourseSummary,
   LoginPayload,
@@ -208,4 +210,20 @@ export async function createCourseRequest(
     method: "POST",
     body: JSON.stringify({ description }),
   });
+}
+
+/**
+ * Submits an authenticated contribution for review (FR-07).
+ */
+export async function submitCourseContribution(
+  courseId: number,
+  payload: ContributionPayload
+): Promise<ContributionSubmission> {
+  return request<ContributionSubmission>(
+    `/courses/${courseId}/contributions`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
 }

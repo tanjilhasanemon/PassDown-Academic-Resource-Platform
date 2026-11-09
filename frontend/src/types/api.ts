@@ -23,6 +23,33 @@ export const SECURITY_SCOPES = {
 export type SecurityScope =
   (typeof SECURITY_SCOPES)[keyof typeof SECURITY_SCOPES];
 
+/** Resource types accepted by `POST /api/v1/courses/{id}/contributions` (FR-07). */
+export type ContributionType =
+  | "slides"
+  | "notes"
+  | "past_paper"
+  | "book"
+  | "other";
+
+/** Payload sent when submitting a course contribution (FR-07). */
+export interface ContributionPayload {
+  title: string;
+  type: ContributionType;
+  url: string;
+  description?: string | null;
+}
+
+/** Response returned after an authenticated contribution submission (FR-07). */
+export interface ContributionSubmission
+  extends Omit<ContributionPayload, "description"> {
+  id: number;
+  course_id: number;
+  submitted_by: number;
+  description: string | null;
+  status: string;
+  created_at: string;
+}
+
 /** Safe user profile returned by `/api/v1/auth/register` and `/api/v1/auth/me` (FR-01). */
 export interface UserProfile {
   id: number;

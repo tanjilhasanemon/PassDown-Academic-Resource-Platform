@@ -1,5 +1,5 @@
 /**
- * PassDown Primary Application Workspace (Boundary Layer — FR-01, FR-02, FR-03).
+ * PassDown Primary Application Workspace (Boundary Layer — FR-01, FR-02, FR-03, FR-07).
  *
  * Implements a Linear/Geist-inspired academic interface featuring:
  * 1. Top Command Header with active Actor/Role badge, In-Memory JWT Indicator,
@@ -21,9 +21,15 @@ import {
   fetchCourseDetailById,
   fetchPublicCourses,
   registerStudentAccount,
+  submitCourseContribution,
   verifySecurityScopeEndpoint,
 } from "./services/apiClient";
-import type { CourseDetail, CourseSummary, UserProfile } from "./types/api";
+import type {
+  ContributionType,
+  CourseDetail,
+  CourseSummary,
+  UserProfile,
+} from "./types/api";
 import { SECURITY_SCOPES } from "./types/api";
 
 type ActiveModal = "none" | "login" | "register" | "profile" | "rbac-inspector";
@@ -77,6 +83,17 @@ const FALLBACK_DEMO_COURSES: CourseSummary[] = [
     semester_offered: "Spring 2027",
     created_at: "2026-10-15T08:00:00Z",
   },
+];
+
+const CONTRIBUTION_TYPE_OPTIONS: {
+  value: ContributionType;
+  label: string;
+}[] = [
+  { value: "slides", label: "Slides" },
+  { value: "notes", label: "Notes" },
+  { value: "past_paper", label: "Past paper" },
+  { value: "book", label: "Book" },
+  { value: "other", label: "Other" },
 ];
 
 const SCOPE_MATRIX_ITEMS = [
@@ -154,6 +171,21 @@ export function App() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+
+  // Contribution Submission State (FR-07)
+  const [contributionTitle, setContributionTitle] = useState("");
+  const [contributionType, setContributionType] =
+    useState<ContributionType>("slides");
+  const [contributionUrl, setContributionUrl] = useState("");
+  const [contributionDescription, setContributionDescription] = useState("");
+  const [contributionError, setContributionError] = useState<string | null>(
+    null
+  );
+  const [contributionSuccess, setContributionSuccess] = useState<string | null>(
+    null
+  );
+  const [isSubmittingContribution, setIsSubmittingContribution] =
+    useState(false);
 
   // Modals & Feedback State (FR-01 & FR-02)
   const [activeModal, setActiveModal] = useState<ActiveModal>("none");
@@ -382,6 +414,64 @@ export function App() {
       );
     } finally {
       setIsSubmittingRequest(false);
+    }
+  };
+
+  // Submit an academic resource contribution for review (FR-07)
+  const handleContributionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmittingContribution || !selectedCourse) return;
+
+    const title = contributionTitle.trim();
+    const url = contributionUrl.trim();
+    const description = contributionDescription.trim();
+    if (!title || title.length > 200) {
+      setContributionError("Enter a title of 1 to 200 characters.");
+      setContributionSuccess(null);
+      return;
+    }
+    if (description.length > 2000) {
+      setContributionError("Description must be at most 2000 characters.");
+      setContributionSuccess(null);
+      return;
+    }
+    try {
+      if (new URL(url).protocol !== "https:") {
+        setContributionError("The resource URL must use HTTPS.");
+        setContributionSuccess(null);
+        return;
+      }
+    } catch {
+      setContributionError("Enter a valid HTTPS resource URL.");
+      setContributionSuccess(null);
+      return;
+    }
+
+    setContributionError(null);
+    setContributionSuccess(null);
+    setIsSubmittingContribution(true);
+    try {
+      const created = await submitCourseContribution(selectedCourse.id, {
+        title,
+        type: contributionType,
+        url,
+        description: description || undefined,
+      });
+      setContributionTitle("");
+      setContributionType("slides");
+      setContributionUrl("");
+      setContributionDescription("");
+      setContributionSuccess(
+        `Contribution #${created.id} submitted and is pending review.`
+      );
+    } catch (err) {
+      setContributionError(
+        err instanceof ApiError
+          ? `HTTP ${err.status}: ${err.message}`
+          : "Unable to reach the PassDown API. Check your connection and try again."
+      );
+    } finally {
+      setIsSubmittingContribution(false);
     }
   };
 
@@ -886,6 +976,170 @@ export function App() {
                   ) : (
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <p className="text-xs text-zinc-600">Sign in to submit a request.</p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal("login")}
+                        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+                      >
+                        Sign in
+                      </button>
+                    </div>
+                  )}
+                </section>
+              ) : activeDetailTab === "contributions" ? (
+                <section
+                  aria-labelledby="contribution-form-title"
+                  className="max-w-2xl space-y-4"
+                >
+                  <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50/70 p-4">
+                    <p className="text-xs text-zinc-700">
+                      Approved materials are available at{" "}
+                      <code className="font-mono text-zinc-900">
+                        {selectedCourse.resource_links.approved_contributions}
+                      </code>
+                      . Pending submissions remain private until approved.
+                    </p>
+                  </div>
+                  <div>
+                    <h3
+                      id="contribution-form-title"
+                      className="text-sm font-semibold text-zinc-900"
+                    >
+                      Submit a contribution
+                    </h3>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      For {selectedCourse.code}: {selectedCourse.title}
+                    </p>
+                  </div>
+                  {user &&
+                  scopes.includes(SECURITY_SCOPES.CONTRIBUTIONS_WRITE) ? (
+                    <form
+                      onSubmit={(event) =>
+                        void handleContributionSubmit(event)
+                      }
+                      className="space-y-3"
+                    >
+                      <div>
+                        <label
+                          htmlFor="contribution-title"
+                          className="block text-xs font-medium text-zinc-700"
+                        >
+                          Title
+                        </label>
+                        <input
+                          id="contribution-title"
+                          value={contributionTitle}
+                          onChange={(event) => {
+                            setContributionTitle(event.target.value);
+                            setContributionError(null);
+                            setContributionSuccess(null);
+                          }}
+                          maxLength={200}
+                          required
+                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="contribution-type"
+                          className="block text-xs font-medium text-zinc-700"
+                        >
+                          Resource type
+                        </label>
+                        <select
+                          id="contribution-type"
+                          value={contributionType}
+                          onChange={(event) => {
+                            const selectedType =
+                              CONTRIBUTION_TYPE_OPTIONS.find(
+                                ({ value }) => value === event.target.value
+                              )?.value;
+                            if (selectedType) {
+                              setContributionType(selectedType);
+                            }
+                            setContributionError(null);
+                            setContributionSuccess(null);
+                          }}
+                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        >
+                          {CONTRIBUTION_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="contribution-url"
+                          className="block text-xs font-medium text-zinc-700"
+                        >
+                          HTTPS resource URL
+                        </label>
+                        <input
+                          id="contribution-url"
+                          type="url"
+                          value={contributionUrl}
+                          onChange={(event) => {
+                            setContributionUrl(event.target.value);
+                            setContributionError(null);
+                            setContributionSuccess(null);
+                          }}
+                          required
+                          placeholder="https://example.com/resource"
+                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="contribution-description"
+                          className="block text-xs font-medium text-zinc-700"
+                        >
+                          Description (optional)
+                        </label>
+                        <textarea
+                          id="contribution-description"
+                          value={contributionDescription}
+                          onChange={(event) => {
+                            setContributionDescription(event.target.value);
+                            setContributionError(null);
+                            setContributionSuccess(null);
+                          }}
+                          rows={4}
+                          maxLength={2000}
+                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      {contributionError && (
+                        <p role="alert" className="text-xs text-red-700">
+                          {contributionError}
+                        </p>
+                      )}
+                      {contributionSuccess && (
+                        <p role="status" className="text-xs text-emerald-800">
+                          {contributionSuccess}
+                        </p>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={isSubmittingContribution}
+                        className="rounded-md bg-zinc-900 px-4 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSubmittingContribution
+                          ? "Submitting..."
+                          : "Submit for review"}
+                      </button>
+                    </form>
+                  ) : user ? (
+                    <p className="text-xs text-amber-800" role="status">
+                      Your account does not have permission to submit
+                      contributions.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-xs text-zinc-600">
+                        Sign in to submit a contribution.
+                      </p>
                       <button
                         type="button"
                         onClick={() => setActiveModal("login")}

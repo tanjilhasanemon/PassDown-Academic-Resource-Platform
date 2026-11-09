@@ -175,6 +175,9 @@ export function App() {
   const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [courseRequests, setCourseRequests] = useState<PublicResourceRequest[]>([]);
+  const [requestStatusFilter, setRequestStatusFilter] = useState<
+    "all" | "open" | "fulfilled"
+  >("all");
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [requestsLoadError, setRequestsLoadError] = useState<string | null>(null);
 
@@ -266,6 +269,12 @@ export function App() {
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const selectedCourseId = selectedCourse?.id;
+  const filteredCourseRequests =
+    requestStatusFilter === "all"
+      ? courseRequests
+      : courseRequests.filter(
+          (request) => request.status === requestStatusFilter
+        );
 
   const showToast = useCallback(
     (type: "success" | "error" | "info", text: string) => {
@@ -1624,29 +1633,68 @@ export function App() {
                         No requests have been submitted for this course.
                       </p>
                     ) : (
-                      <ul className="mt-4 divide-y divide-zinc-200 border-y border-zinc-200">
-                        {courseRequests.map((courseRequest) => (
-                          <li key={courseRequest.id} className="py-4">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm text-zinc-800">
-                                {courseRequest.description}
-                              </p>
-                              <span
-                                className={`shrink-0 rounded px-2 py-1 text-[11px] font-medium capitalize ${courseRequest.status === "open"
-                                  ? "bg-emerald-50 text-emerald-800"
-                                  : "bg-zinc-100 text-zinc-700"
+                      <>
+                        <div
+                          role="group"
+                          aria-label="Filter requests by status"
+                          className="mt-4 flex flex-wrap gap-2"
+                        >
+                          {(["all", "open", "fulfilled"] as const).map(
+                            (filter) => {
+                              const count =
+                                filter === "all"
+                                  ? courseRequests.length
+                                  : courseRequests.filter(
+                                      (request) => request.status === filter
+                                    ).length;
+                              return (
+                                <button
+                                  key={filter}
+                                  type="button"
+                                  aria-pressed={requestStatusFilter === filter}
+                                  onClick={() => setRequestStatusFilter(filter)}
+                                  className={`rounded-md border px-3 py-1.5 text-xs font-medium capitalize ${
+                                    requestStatusFilter === filter
+                                      ? "border-zinc-900 bg-zinc-900 text-white"
+                                      : "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
                                   }`}
-                              >
-                                {courseRequest.status}
-                              </span>
-                            </div>
-                            <p className="mt-2 text-xs text-zinc-500">
-                              Requested by {courseRequest.author_name} ·{" "}
-                              {new Date(courseRequest.created_at).toLocaleString()}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
+                                >
+                                  {filter} <span>({count})</span>
+                                </button>
+                              );
+                            }
+                          )}
+                        </div>
+                        {filteredCourseRequests.length === 0 ? (
+                          <p role="status" className="mt-4 text-xs text-zinc-500">
+                            No {requestStatusFilter} requests for this course.
+                          </p>
+                        ) : (
+                          <ul className="mt-4 divide-y divide-zinc-200 border-y border-zinc-200">
+                            {filteredCourseRequests.map((courseRequest) => (
+                              <li key={courseRequest.id} className="py-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm text-zinc-800">
+                                    {courseRequest.description}
+                                  </p>
+                                  <span
+                                    className={`shrink-0 rounded px-2 py-1 text-[11px] font-medium capitalize ${courseRequest.status === "open"
+                                      ? "bg-emerald-50 text-emerald-800"
+                                      : "bg-zinc-100 text-zinc-700"
+                                      }`}
+                                  >
+                                    {courseRequest.status}
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-xs text-zinc-500">
+                                  Requested by {courseRequest.author_name} ·{" "}
+                                  {new Date(courseRequest.created_at).toLocaleString()}
+                                </p>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
                     )}
                   </div>
 

@@ -17,9 +17,6 @@ class CourseRepository:
     def list_courses(db: Session, search: str | None = None) -> list[Course]:
         """Lists courses ordered by code, optionally filtered by code or title.
 
-        Enforces SRS FR-03: Given a search term matches a course code or title,
-        when ?search= is supplied, matching courses are returned.
-
         Args:
             db (Session): Active SQLAlchemy database session.
             search (str | None): Optional search substring for code or title.
@@ -99,3 +96,83 @@ class CourseRepository:
         db.commit()
         db.refresh(course)
         return course
+
+    @staticmethod
+    def update(
+        db: Session,
+        course: Course,
+        *,
+        code: str | None = None,
+        title: str | None = None,
+        department: str | None = None,
+        semester_offered: str | None = None,
+    ) -> Course:
+        """Updates an existing Course record with provided non-None fields.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            course (Course): The Course entity to update.
+            code (str | None): New course code if provided.
+            title (str | None): New title if provided.
+            department (str | None): New department if provided.
+            semester_offered (str | None): New semester if provided.
+
+        Returns:
+            Course: The updated and refreshed Course ORM instance.
+        """
+        if code is not None:
+            course.code = code.strip().upper()
+        if title is not None:
+            course.title = title.strip()
+        if department is not None:
+            course.department = department.strip()
+        if semester_offered is not None:
+            course.semester_offered = semester_offered.strip()
+
+        db.commit()
+        db.refresh(course)
+        return course
+
+    @staticmethod
+    def delete(db: Session, course: Course) -> None:
+        """Deletes a Course record from the database.
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            course (Course): The Course entity to delete.
+        """
+        db.delete(course)
+        db.commit()
+
+    @staticmethod
+    def count_dependents(db: Session, course_id: int) -> int:
+        """Counts total dependent records (materials, contributions, requests) for a course.
+
+        Used to enforce the FR-04 deletion protection rule (409 Conflict).
+
+        Args:
+            db (Session): Active SQLAlchemy database session.
+            course_id (int): Unique primary key of the course.
+
+        Returns:
+            int: Total number of dependent records associated with the course.
+        """
+        from app.models.core_material import CoreMaterial
+        from app.models.contribution import Contribution
+        from app.models.request import Request
+
+        materials_count = (
+            db.query(CoreMaterial)
+            .filter(CoreMaterial.course_id == course_id)
+            .count()
+        )
+        contributions_count = (
+            db.query(Contribution)
+            .filter(Contribution.course_id == course_id)
+            .count()
+        )
+        requests_count = (
+            db.query(Request).filter(Request.course_id == course_id).count()
+        )
+
+        return materials_count + contributions_count + requests_count

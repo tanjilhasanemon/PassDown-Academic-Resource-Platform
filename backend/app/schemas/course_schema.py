@@ -3,6 +3,7 @@
 Implements serialization schemas for FR-03 (`GET /api/v1/courses` and
 `GET /api/v1/courses/{id}`), including hypermedia navigation links to the
 course's public resource sections (`core-materials`, `contributions`, `requests`).
+Also adds request validation schemas for FR-04 (Create and Update).
 """
 
 from datetime import datetime
@@ -24,6 +25,34 @@ class CourseResourceLinks(BaseModel):
         ...,
         description="Public endpoint for course missing-material Requests (FR-11).",
     )
+
+
+class CourseCreate(BaseModel):
+    """Validated payload for creating a new course (FR-04).
+
+    Attributes:
+        code (str): Unique course code (e.g., 'CSE 451').
+        title (str): Official course title.
+        department (str): Academic department offering the course.
+        semester_offered (str): Semester label (e.g., 'Spring 2027').
+    """
+
+    code: str = Field(..., min_length=2, max_length=32, description="Unique course code.")
+    title: str = Field(..., min_length=3, max_length=200, description="Official course title.")
+    department: str = Field(..., min_length=2, max_length=100, description="Academic department.")
+    semester_offered: str = Field(..., min_length=3, max_length=50, description="Semester offered.")
+
+
+class CourseUpdate(BaseModel):
+    """Validated payload for updating an existing course (FR-04).
+
+    All fields are optional to allow partial updates.
+    """
+
+    code: str | None = Field(default=None, min_length=2, max_length=32)
+    title: str | None = Field(default=None, min_length=3, max_length=200)
+    department: str | None = Field(default=None, min_length=2, max_length=100)
+    semester_offered: str | None = Field(default=None, min_length=3, max_length=50)
 
 
 class CourseRead(BaseModel):

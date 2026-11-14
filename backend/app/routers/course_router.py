@@ -37,7 +37,7 @@ def list_courses(
     db: Session = Depends(get_db),
 ) -> list[CourseRead]:
     """Returns the public course catalogue, optionally filtered by `?search=`."""
-    return CourseService.list_public_courses(db, search=search)
+    return CourseService.list_public_courses(db, search=search) 
 
 
 @router.get(

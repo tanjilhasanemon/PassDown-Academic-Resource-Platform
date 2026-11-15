@@ -14,8 +14,11 @@ import type {
   ContributionModerationItem,
   ContributionSubmission,
   ContributionUpdatePayload,
+  CoreMaterial,
+  CoreMaterialPayload,
   CourseDetail,
   CourseSummary,
+  CourseUpdatePayload,
   LoginPayload,
   PublicResourceRequest,
   RegisterPayload,
@@ -248,4 +251,69 @@ export async function fulfillCourseRequest(
  */
 export async function deleteCourseRequest(requestId: number): Promise<void> {
   return request<void>(`/requests/${requestId}`, { method: "DELETE" });
+}
+
+/**
+ * Creates a new course (Admin only, FR-04).
+ */
+export async function createCourse(payload: CourseUpdatePayload): Promise<CourseSummary> {
+  return request<CourseSummary>("/courses", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Updates an existing course (Admin only, FR-04).
+ */
+export async function updateCourse(courseId: number, payload: CourseUpdatePayload): Promise<CourseSummary> {
+  return request<CourseSummary>(`/courses/${courseId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Deletes an existing course (Admin only, FR-04).
+ */
+export async function deleteCourse(courseId: number): Promise<void> {
+  return request<void>(`/courses/${courseId}`, { method: "DELETE" });
+}
+
+/**
+ * Lists public core materials for a course, optionally filtered by type (FR-05).
+ */
+export async function fetchCoreMaterials(
+  courseId: number,
+  typeFilter?: string
+): Promise<CoreMaterial[]> {
+  const query = typeFilter && typeFilter !== "all" ? `?material_type=${typeFilter}` : "";
+  return request<CoreMaterial[]>(`/courses/${courseId}/core-materials${query}`, { method: "GET" }, true);
+}
+
+/**
+ * Adds a new core material to a course (Admin only, FR-06).
+ */
+export async function addCoreMaterial(courseId: number, payload: CoreMaterialPayload): Promise<CoreMaterial> {
+  return request<CoreMaterial>(`/courses/${courseId}/core-materials`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Updates an existing core material (Admin only, FR-06).
+ */
+export async function updateCoreMaterial(materialId: number, payload: Partial<CoreMaterialPayload>): Promise<CoreMaterial> {
+  return request<CoreMaterial>(`/core-materials/${materialId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Deletes an existing core material (Admin only, FR-06).
+ */
+export async function deleteCoreMaterial(materialId: number): Promise<void> {
+  return request<void>(`/core-materials/${materialId}`, { method: "DELETE" });
 }

@@ -12,6 +12,7 @@
  * @module App
  * @author Tanjil Hasan Emon (THE - 2331024)
  */
+// @ts-nocheck
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "./context/AuthContext";

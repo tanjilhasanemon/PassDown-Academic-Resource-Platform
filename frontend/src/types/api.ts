@@ -140,3 +140,30 @@ export interface PublicResourceRequest {
   author_name: string;
   created_at: string;
 }
+
+/** Response returned after a Core Material is created or fetched (FR-05, FR-06). */
+export interface CoreMaterial {
+  id: number;
+  course_id: number;
+  title: string;
+  type: ContributionType;
+  url: string;
+  description: string | null;
+  created_at: string;
+}
+
+/** Payload sent when creating a new Core Material (FR-06). */
+export interface CoreMaterialPayload {
+  title: string;
+  type: ContributionType;
+  url: string;
+  description?: string | null;
+}
+
+/** Payload sent when updating an existing Course (FR-04). */
+export interface CourseUpdatePayload {
+  code?: string;
+  title?: string;
+  department?: string;
+  semester_offered?: string;
+}

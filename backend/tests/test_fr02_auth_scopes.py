@@ -1,6 +1,5 @@
 """Unit & API Integration Tests for FR-02: Authenticate and Authorize Protected Sessions.
 
-Author: Tanjil Hasan Emon (THE) - 2331024
 Covers all confirmation criteria for FR-02 in PassDown SRS §3.1, §3.4, NFR-02, and NFR-03:
 1. Valid registered credentials at POST /api/v1/auth/login return a signed JWT containing
    subject identity (`sub`), `role`, fine-grained `scopes`, and `exp`.

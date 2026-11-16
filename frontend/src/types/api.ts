@@ -1,17 +1,16 @@
 /**
- * Shared TypeScript API Contracts & Security Scope Constants (ECB Boundary Layer).
+ * Shared TypeScript API Contracts & Role-Based Permission Scopes.
  *
- * Mirrors the backend Pydantic v2 schemas in `app/schemas/` and security scopes in
- * `app/core/security.py` to satisfy PassDown SRS NFR-09.
+ * Mirrors the backend Pydantic v2 schemas and OAuth2 security scopes for
+ * end-to-end type safety across the React client.
  *
  * @module types/api
- * @author Tanjil Hasan Emon (THE - 2331024)
  */
 
-/** Application roles defined in SRS §2.2 and §3.4. */
+/** Application roles supported by the platform. */
 export type UserRole = "guest" | "student" | "admin";
 
-/** Fine-grained RBAC security scopes defined in SRS §3.4. */
+/** Fine-grained OAuth2 permission scopes embedded in signed JWTs. */
 export const SECURITY_SCOPES = {
   COURSES_WRITE: "courses:write",
   MATERIALS_WRITE: "materials:write",
@@ -23,7 +22,7 @@ export const SECURITY_SCOPES = {
 export type SecurityScope =
   (typeof SECURITY_SCOPES)[keyof typeof SECURITY_SCOPES];
 
-/** Resource types accepted by Contribution submission and editing (FR-07, FR-09). */
+/** Supported academic resource categories. */
 export type ContributionType =
   | "slides"
   | "notes"
@@ -31,7 +30,7 @@ export type ContributionType =
   | "book"
   | "other";
 
-/** Payload sent when submitting or editing a Contribution (FR-07, FR-09). */
+/** Payload for submitting a new community contribution. */
 export interface ContributionPayload {
   title: string;
   type: ContributionType;
@@ -39,10 +38,10 @@ export interface ContributionPayload {
   description?: string | null;
 }
 
-/** Editable fields for an existing pending Contribution (FR-09). */
+/** Editable fields for a pending community contribution. */
 export type ContributionUpdatePayload = ContributionPayload;
 
-/** Response returned after an authenticated contribution submission (FR-07). */
+/** Persisted community contribution record returned by the API. */
 export interface ContributionSubmission
   extends Omit<ContributionPayload, "description"> {
   id: number;
@@ -53,13 +52,13 @@ export interface ContributionSubmission
   created_at: string;
 }
 
-/** Pending contribution metadata returned to authorized Admin moderators (FR-08). */
+/** Pending contribution record enriched with course and submitter details for moderation. */
 export interface ContributionModerationItem extends ContributionSubmission {
   course: CourseSummary;
   submitter: UserProfile;
 }
 
-/** Safe user profile returned by `/api/v1/auth/register` and `/api/v1/auth/me` (FR-01). */
+/** Public-safe user profile returned by authentication endpoints. */
 export interface UserProfile {
   id: number;
   name: string;
@@ -68,20 +67,20 @@ export interface UserProfile {
   created_at: string;
 }
 
-/** Payload sent to `POST /api/v1/auth/register` (FR-01). */
+/** Payload sent when registering a student account. */
 export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
 }
 
-/** Payload sent to `POST /api/v1/auth/login` (FR-02). */
+/** Payload sent when authenticating with email and password. */
 export interface LoginPayload {
   email: string;
   password: string;
 }
 
-/** Signed JWT session response from `POST /api/v1/auth/login` (FR-02). */
+/** Signed JWT session payload returned upon successful sign-in. */
 export interface TokenSessionResponse {
   access_token: string;
   token_type: string;
@@ -91,7 +90,7 @@ export interface TokenSessionResponse {
   user: UserProfile;
 }
 
-/** Response from `/api/v1/auth/scopes/*` verification endpoints (FR-02). */
+/** Result returned by scope verification endpoints. */
 export interface ScopeVerificationResult {
   authorized: boolean;
   user_id: number;
@@ -99,7 +98,7 @@ export interface ScopeVerificationResult {
   verified_scope: string;
 }
 
-/** Summary Course item returned by `GET /api/v1/courses` (FR-03). */
+/** Summary course record returned by the public catalogue endpoint. */
 export interface CourseSummary {
   id: number;
   code: string;
@@ -109,19 +108,19 @@ export interface CourseSummary {
   created_at: string;
 }
 
-/** Hypermedia resource section links inside CourseDetail (FR-03). */
+/** Hypermedia links to a course's nested resource collections. */
 export interface CourseResourceLinks {
   core_materials: string;
   approved_contributions: string;
   requests: string;
 }
 
-/** Detailed Course record returned by `GET /api/v1/courses/{id}` (FR-03). */
+/** Detailed course record including hypermedia resource links. */
 export interface CourseDetail extends CourseSummary {
   resource_links: CourseResourceLinks;
 }
 
-/** Request returned by `POST /api/v1/courses/{id}/requests` (FR-10). */
+/** Persisted resource request record. */
 export interface ResourceRequest {
   id: number;
   course_id: number;
@@ -131,7 +130,7 @@ export interface ResourceRequest {
   created_at: string;
 }
 
-/** Public request fields returned by `GET /api/v1/courses/{id}/requests` (FR-11). */
+/** Public resource request item enriched with the author's display name. */
 export interface PublicResourceRequest {
   id: number;
   submitted_by: number;
@@ -141,7 +140,7 @@ export interface PublicResourceRequest {
   created_at: string;
 }
 
-/** Response returned after a Core Material is created or fetched (FR-05, FR-06). */
+/** Curated core course material record. */
 export interface CoreMaterial {
   id: number;
   course_id: number;
@@ -152,7 +151,7 @@ export interface CoreMaterial {
   created_at: string;
 }
 
-/** Payload sent when creating a new Core Material (FR-06). */
+/** Payload for creating or updating a curated core material. */
 export interface CoreMaterialPayload {
   title: string;
   type: ContributionType;
@@ -160,7 +159,7 @@ export interface CoreMaterialPayload {
   description?: string | null;
 }
 
-/** Payload sent when updating an existing Course (FR-04). */
+/** Payload for creating or updating an academic course. */
 export interface CourseUpdatePayload {
   code?: string;
   title?: string;

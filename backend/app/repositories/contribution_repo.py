@@ -110,24 +110,26 @@ class ContributionRepository:
         return list(db.execute(stmt).scalars().all())
 
     @staticmethod
-    def list_approved_by_course(db: Session, course_id: int) -> list[Contribution]:
-        """Lists only approved Contributions belonging to a course.
+    def list_approved_by_course(
+        db: Session, course_id: int, material_type: str | None = None
+    ) -> list[Contribution]:
+        """Lists only approved Contributions belonging to a course, optionally filtered by type.
 
         Args:
             db (Session): Active SQLAlchemy database session.
             course_id (int): Course whose public Contributions are requested.
+            material_type (str | None): Optional material type filter.
 
         Returns:
             list[Contribution]: Approved Contributions in submission order.
         """
-        stmt = (
-            select(Contribution)
-            .where(
-                Contribution.course_id == course_id,
-                Contribution.status == "approved",
-            )
-            .order_by(Contribution.created_at.desc(), Contribution.id.desc())
+        stmt = select(Contribution).where(
+            Contribution.course_id == course_id,
+            Contribution.status == "approved",
         )
+        if material_type and material_type.strip().lower() != "all":
+            stmt = stmt.where(Contribution.type == material_type.strip().lower())
+        stmt = stmt.order_by(Contribution.created_at.desc(), Contribution.id.desc())
         return list(db.execute(stmt).scalars().all())
 
     @staticmethod

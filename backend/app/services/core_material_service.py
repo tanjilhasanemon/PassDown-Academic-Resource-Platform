@@ -23,7 +23,7 @@ class CoreMaterialService:
     def list_public_materials(
         db: Session, course_id: int, material_type: str | None = None
     ) -> list[CoreMaterialRead]:
-        """Lists Core Materials for a course, optionally filtered by type (FR-05).
+        """Lists Core Materials for a course, optionally filtered by type.
 
         Args:
             db (Session): Active SQLAlchemy database session.
@@ -52,7 +52,7 @@ class CoreMaterialService:
     def add_material(
         db: Session, course_id: int, payload: CoreMaterialCreate
     ) -> CoreMaterialRead:
-        """Adds a new Core Material to an existing course (FR-06).
+        """Adds a new Core Material to an existing course.
 
         Args:
             db (Session): Active SQLAlchemy database session.
@@ -85,7 +85,7 @@ class CoreMaterialService:
     def update_material(
         db: Session, material_id: int, payload: CoreMaterialUpdate
     ) -> CoreMaterialRead:
-        """Updates an existing Core Material (FR-06).
+        """Updates an existing Core Material.
 
         Args:
             db (Session): Active SQLAlchemy database session.
@@ -117,7 +117,7 @@ class CoreMaterialService:
 
     @staticmethod
     def delete_material(db: Session, material_id: int) -> None:
-        """Deletes an existing Core Material (FR-06).
+        """Deletes an existing Core Material.
 
         Args:
             db (Session): Active SQLAlchemy database session.

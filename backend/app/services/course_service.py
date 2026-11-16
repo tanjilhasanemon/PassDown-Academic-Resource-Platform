@@ -81,7 +81,7 @@ class CourseService:
 
     @staticmethod
     def create_course(db: Session, payload: CourseCreate) -> CourseRead:
-        """Creates a new course after verifying code uniqueness (FR-04).
+        """Creates a new course after verifying code uniqueness.
 
         Args:
             db (Session): Active SQLAlchemy database session.
@@ -111,7 +111,7 @@ class CourseService:
 
     @staticmethod
     def update_course(db: Session, course_id: int, payload: CourseUpdate) -> CourseRead:
-        """Updates an existing course's metadata (FR-04).
+        """Updates an existing course's metadata.
 
         Args:
             db (Session): Active SQLAlchemy database session.
@@ -153,7 +153,7 @@ class CourseService:
 
     @staticmethod
     def delete_course(db: Session, course_id: int) -> None:
-        """Deletes a course if and only if it has no dependent records (FR-04).
+        """Deletes a course if and only if it has no dependent records.
 
         Enforces the Risk Mitigation Policy (§1.6) to prevent accidental
         cascade deletion of student data.

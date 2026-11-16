@@ -65,7 +65,7 @@ def test_rbac_role_scopes_matrix() -> None:
 def test_user_repository_create_and_case_insensitive_email_lookup(
     db_session: Session,
 ) -> None:
-    """Verifies User creation and case-insensitive unique email retrieval (FR-01)."""
+    """Verifies User creation and case-insensitive unique email retrieval."""
     created = UserRepository.create(
         db_session,
         name="Tanjil Hasan Emon",
@@ -89,7 +89,7 @@ def test_user_repository_create_and_case_insensitive_email_lookup(
 def test_course_repository_list_and_search_by_code_or_title(
     db_session: Session,
 ) -> None:
-    """Verifies Course creation, ordering, and ?search= filtering (FR-03)."""
+    """Verifies Course creation, ordering, and ?search= filtering."""
     CourseRepository.create(
         db_session,
         code="CSE 451",

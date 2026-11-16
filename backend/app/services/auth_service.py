@@ -4,7 +4,7 @@ Enforces business rules for PassDown SRS FR-01 and FR-02:
 1. Checks case-insensitive email uniqueness and raises 409 Conflict on duplicates.
 2. Forces public registration accounts to role='student' (preventing admin escalation).
 3. Hashes passwords with bcrypt prior to repository persistence (NFR-01).
-4. Verifies login credentials and issues expiring signed JWTs with role scopes (FR-02).
+4. Verifies login credentials and issues expiring signed JWTs with role scopes.
 """
 
 from fastapi import HTTPException, status
@@ -67,7 +67,7 @@ class AuthService:
         email: str,
         password: str,
     ) -> TokenResponse:
-        """Verifies user credentials and returns a signed JWT session payload (FR-02).
+        """Verifies user credentials and returns a signed JWT session payload.
 
         Args:
             db (Session): Active SQLAlchemy database session.

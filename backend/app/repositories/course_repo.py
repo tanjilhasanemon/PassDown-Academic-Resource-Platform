@@ -1,24 +1,44 @@
-"""Course Repository Module (ECB Entity Layer)."""
+"""Course Repository (Entity Layer).
+
+
+Encapsulates all SQLAlchemy database queries for the `courses` table, including
+public listing, case-insensitive search by code or title, creation, updates,
+and safe deletion with dependent-entity counting.
+"""
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.models.contribution import Contribution
+from app.models.core_material import CoreMaterial
 from app.models.course import Course
+from app.models.request import Request
 
 
 class CourseRepository:
-    """Encapsulates SQLAlchemy persistence operations for Course entities."""
+    """Data-access repository for `Course` ORM entities."""
 
     @staticmethod
-    def list_courses(db: Session, search: str | None = None) -> list[Course]:
-        """Lists courses ordered by code, optionally filtered by code or title."""
+    def list_courses(
+        db: Session, search: str | None = None
+    ) -> list[Course]:
+        """Lists all courses ordered by course code, optionally filtered by `search`.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            search: Optional substring matched case-insensitively against
+                `Course.code` or `Course.title` (SRS §3.1 FR-03).
+
+        Returns:
+            list[Course]: Ordered list of matching `Course` ORM instances.
+        """
         stmt = select(Course)
         if search and search.strip():
-            pattern = f"%{search.strip().lower()}%"
+            pattern = f"%{search.strip()}%"
             stmt = stmt.where(
                 or_(
-                    func.lower(Course.code).like(pattern),
-                    func.lower(Course.title).like(pattern),
+                    Course.code.ilike(pattern),
+                    Course.title.ilike(pattern),
                 )
             )
         stmt = stmt.order_by(Course.code.asc())
@@ -26,15 +46,31 @@ class CourseRepository:
 
     @staticmethod
     def get_by_id(db: Session, course_id: int) -> Course | None:
-        """Retrieves a Course record by its primary key ID."""
+        """Retrieves a single `Course` by its primary key ID.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            course_id: Integer primary key of the course.
+
+        Returns:
+            Course | None: The matching `Course` entity if found, else `None`.
+        """
         stmt = select(Course).where(Course.id == course_id)
         return db.execute(stmt).scalar_one_or_none()
 
     @staticmethod
     def get_by_code(db: Session, code: str) -> Course | None:
-        """Retrieves a Course record by its unique course code."""
-        normalized = code.strip().upper()
-        stmt = select(Course).where(func.upper(Course.code) == normalized)
+        """Retrieves a single `Course` by its unique course code (case-insensitive).
+
+        Args:
+            db: Active SQLAlchemy database session.
+            code: Course code string (e.g., `'CSE 451'`).
+
+        Returns:
+            Course | None: The matching `Course` entity if found, else `None`.
+        """
+        normalized_code = code.strip().upper()
+        stmt = select(Course).where(func.upper(Course.code) == normalized_code)
         return db.execute(stmt).scalar_one_or_none()
 
     @staticmethod
@@ -46,7 +82,18 @@ class CourseRepository:
         department: str,
         semester_offered: str,
     ) -> Course:
-        """Persists a new Course record in the database."""
+        """Persists a new `Course` entity in the database.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            code: Unique course code (e.g., `'CSE 451'`).
+            title: Full academic title of the course.
+            department: Offering academic department (e.g., `'CSE'`).
+            semester_offered: Academic term offered (e.g., `'Spring 2027'`).
+
+        Returns:
+            Course: Newly created and refreshed `Course` ORM entity.
+        """
         course = Course(
             code=code.strip().upper(),
             title=title.strip(),
@@ -59,54 +106,61 @@ class CourseRepository:
         return course
 
     @staticmethod
-    def update(
-        db: Session,
-        course: Course,
-        *,
-        code: str | None = None,
-        title: str | None = None,
-        department: str | None = None,
-        semester_offered: str | None = None,
-    ) -> Course:
-        """Updates an existing Course record with provided non-None fields."""
-        if code is not None:
-            course.code = code.strip().upper()
-        if title is not None:
-            course.title = title.strip()
-        if department is not None:
-            course.department = department.strip()
-        if semester_offered is not None:
-            course.semester_offered = semester_offered.strip()
+    def update(db: Session, course: Course, **kwargs: str | None) -> Course:
+        """Updates an existing `Course` entity with provided non-None fields.
 
+        Args:
+            db: Active SQLAlchemy database session.
+            course: Existing `Course` ORM instance to update.
+            **kwargs: Field names and updated string values.
+
+        Returns:
+            Course: Updated and refreshed `Course` ORM entity.
+        """
+        for key, value in kwargs.items():
+            if value is not None:
+                cleaned = value.strip().upper() if key == "code" else value.strip()
+                setattr(course, key, cleaned)
         db.commit()
         db.refresh(course)
         return course
 
     @staticmethod
     def delete(db: Session, course: Course) -> None:
-        """Deletes a Course record from the database."""
+        """Deletes a `Course` entity from the database.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            course: Existing `Course` ORM instance to delete.
+        """
         db.delete(course)
         db.commit()
 
     @staticmethod
     def count_dependents(db: Session, course_id: int) -> int:
-        """Counts total dependent records for a course."""
-        from app.models.core_material import CoreMaterial
-        from app.models.contribution import Contribution
-        from app.models.request import Request
+        """Counts total dependent CoreMaterials, Contributions, and Requests for a course.
 
-        materials_count = (
-            db.query(CoreMaterial)
-            .filter(CoreMaterial.course_id == course_id)
-            .count()
-        )
-        contributions_count = (
-            db.query(Contribution)
-            .filter(Contribution.course_id == course_id)
-            .count()
-        )
-        requests_count = (
-            db.query(Request).filter(Request.course_id == course_id).count()
-        )
+        Used by FR-04 to block course deletion with `409 Conflict` when dependent
+        academic records exist.
 
-        return materials_count + contributions_count + requests_count
+        Args:
+            db: Active SQLAlchemy database session.
+            course_id: Primary key of the course to inspect.
+
+        Returns:
+            int: Total count of dependent records across all 3 child tables.
+        """
+        materials_count = db.execute(
+            select(func.count(CoreMaterial.id)).where(
+                CoreMaterial.course_id == course_id
+            )
+        ).scalar_one()
+        contributions_count = db.execute(
+            select(func.count(Contribution.id)).where(
+                Contribution.course_id == course_id
+            )
+        ).scalar_one()
+        requests_count = db.execute(
+            select(func.count(Request.id)).where(Request.course_id == course_id)
+        ).scalar_one()
+        return int(materials_count + contributions_count + requests_count)

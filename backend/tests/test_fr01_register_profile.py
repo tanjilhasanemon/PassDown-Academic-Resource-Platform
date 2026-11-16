@@ -1,6 +1,5 @@
 """Unit & API Integration Tests for FR-01: Register and View User Profile.
 
-Author: Tanjil Hasan Emon (THE) - 2331024
 Covers all 4 confirmation criteria for FR-01 in PassDown SRS §3.1:
 1. Valid registration creates account with role='student' and stores bcrypt hash.
 2. Duplicate email (409) or invalid data (422) returns error and creates no duplicate.

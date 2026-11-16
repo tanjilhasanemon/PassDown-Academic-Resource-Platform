@@ -1,6 +1,5 @@
 """Automated Source Code Documentation Coverage Test (Assessment SL# 7).
 
-Author: Tanjil Hasan Emon (THE) - 2331024
 Inspects every Python module, class, and function in `backend/app/` using
 Python's `ast` module and enforces 100.0% Google-style docstring coverage.
 """

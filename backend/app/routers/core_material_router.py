@@ -1,6 +1,6 @@
 """Core Material HTTP Router (ECB Boundary Layer).
 
-Exposes public listing/filtering (FR-05) and Admin CRUD operations (FR-06).
+Exposes public listing/filtering and Admin CRUD operations.
 """
 
 from fastapi import APIRouter, Depends, Query, Security, status, Response
@@ -15,15 +15,15 @@ from app.schemas.core_material_schema import (
 )
 from app.services.core_material_service import CoreMaterialService
 
-router = APIRouter(tags=["Core Materials (FR-05, FR-06)"])
+router = APIRouter(tags=["Core Materials"])
 
 
-# --- Public Endpoints (FR-05) ---
+# --- Public Endpoints ---
 @router.get(
     "/courses/{course_id}/core-materials",
     response_model=list[CoreMaterialRead],
     status_code=status.HTTP_200_OK,
-    summary="List public core materials for a course (FR-05)",
+    summary="List public core materials for a course",
     responses={404: {"description": "The course does not exist."}},
 )
 def list_core_materials(
@@ -40,7 +40,7 @@ def list_core_materials(
     )
 
 
-# --- Admin Endpoints (FR-06) ---
+# --- Admin Endpoints ---
 @router.post(
     "/courses/{course_id}/core-materials",
     response_model=CoreMaterialRead,

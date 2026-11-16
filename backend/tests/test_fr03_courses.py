@@ -1,6 +1,5 @@
 """Unit & API Integration Tests for FR-03: Browse and Search Courses.
 
-Author: Tanjil Hasan Emon (THE) - 2331024
 Covers all 4 confirmation criteria for FR-03 in PassDown SRS §3.1:
 1. Public visitor GET /api/v1/courses returns course code, title, department,
    semester_offered, and stable identifiers without requiring login.
@@ -121,10 +120,10 @@ def test_fr03_course_detail_valid_id_returns_resource_links_and_unknown_returns_
 
 
 def test_fr03_idempotent_database_seeder(db_session: Session) -> None:
-    """Verifies that seed_initial_data provisions Admin, Student, and 6 IUB courses."""
+    """Verifies that seed_initial_data provisions Admin, Student, and 8 IUB courses."""
     first_run = seed_initial_data(db_session)
     assert first_run["users_created"] == 2
-    assert first_run["courses_created"] == 6
+    assert first_run["courses_created"] == 8
 
     # Second run must be idempotent (0 duplicates created)
     second_run = seed_initial_data(db_session)

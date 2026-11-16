@@ -1,9 +1,10 @@
 """Contribution Submission HTTP Router (ECB Boundary Layer).
 
-Exposes public approved-Contribution listing and authenticated FR-07 submission.
+Exposes public approved-Contribution listing/filtering and
+authenticated FR-07 submission.
 """
 
-from fastapi import APIRouter, Depends, Security, status
+from fastapi import APIRouter, Depends, Query, Security, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -14,7 +15,7 @@ from app.services.contribution_service import ContributionService
 
 router = APIRouter(
     prefix="/courses/{course_id}/contributions",
-    tags=["Contributions (FR-07, FR-08)"],
+    tags=["Contributions"],
 )
 
 
@@ -22,22 +23,28 @@ router = APIRouter(
     "",
     response_model=list[ContributionRead],
     status_code=status.HTTP_200_OK,
-    summary="List approved public Contributions for a course (FR-08)",
+    summary="List approved public Contributions for a course",
     responses={404: {"description": "The course does not exist."}},
 )
 def list_course_contributions(
     course_id: int,
+    material_type: str | None = Query(
+        default=None,
+        description="Optional filter by type (slides, notes, past_paper, book, other).",
+    ),
     db: Session = Depends(get_db),
 ) -> list[ContributionRead]:
     """Returns approved Contributions only; pending and rejected stay hidden."""
-    return ContributionService.list_public_contributions(db, course_id=course_id)
+    return ContributionService.list_public_contributions(
+        db, course_id=course_id, material_type=material_type
+    )
 
 
 @router.post(
     "",
     response_model=ContributionRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Submit a pending contribution for a course (FR-07)",
+    summary="Submit a pending contribution for a course",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks contributions:write permission."},

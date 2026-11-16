@@ -19,14 +19,14 @@ from app.schemas.request_schema import RequestCreate, RequestPublicRead, Request
 from app.services.course_service import CourseService
 from app.services.request_service import RequestService
 
-router = APIRouter(prefix="/courses", tags=["Courses (FR-03, FR-04)"])
+router = APIRouter(prefix="/courses", tags=["Courses"])
 
 
 @router.get(
     "",
     response_model=list[CourseRead],
     status_code=status.HTTP_200_OK,
-    summary="Browse and search public courses by code or title (FR-03)",
+    summary="Browse and search public courses by code or title",
 )
 def list_courses(
     search: str | None = Query(
@@ -44,7 +44,7 @@ def list_courses(
     "/{course_id}",
     response_model=CourseDetailRead,
     status_code=status.HTTP_200_OK,
-    summary="Get course detail and public resource section links (FR-03)",
+    summary="Get course detail and public resource section links",
 )
 def get_course_by_id(
     course_id: int,
@@ -58,7 +58,7 @@ def get_course_by_id(
     "",
     response_model=CourseRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new course (FR-04)",
+    summary="Create a new course",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks courses:write permission."},
@@ -78,7 +78,7 @@ def create_course(
     "/{course_id}",
     response_model=CourseRead,
     status_code=status.HTTP_200_OK,
-    summary="Update an existing course (FR-04)",
+    summary="Update an existing course",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks courses:write permission."},
@@ -99,7 +99,7 @@ def update_course(
 @router.delete(
     "/{course_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a course if it has no dependencies (FR-04)",
+    summary="Delete a course if it has no dependencies",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks courses:write permission."},
@@ -123,7 +123,7 @@ def delete_course(
     "/{course_id}/requests",
     response_model=list[RequestPublicRead],
     status_code=status.HTTP_200_OK,
-    summary="Browse public requests for a course (FR-11)",
+    summary="Browse public requests for a course",
     responses={404: {"description": "The course does not exist."}},
 )
 def list_course_requests(
@@ -138,7 +138,7 @@ def list_course_requests(
     "/{course_id}/requests",
     response_model=RequestRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Submit an open resource request for a course (FR-10)",
+    summary="Submit an open resource request for a course",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks requests:write permission."},

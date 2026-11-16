@@ -14,14 +14,14 @@ from app.schemas.contribution_schema import (
 )
 from app.services.contribution_service import ContributionService
 
-router = APIRouter(prefix="/contributions", tags=["Contribution Moderation (FR-08)"])
+router = APIRouter(prefix="/contributions", tags=["Contribution Moderation"])
 
 
 @router.get(
     "/pending",
     response_model=list[ContributionModerationRead],
     status_code=status.HTTP_200_OK,
-    summary="List pending Contributions for Admin moderation (FR-08)",
+    summary="List pending Contributions for Admin moderation",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks contributions:moderate permission."},
@@ -41,7 +41,7 @@ def list_pending_contributions(
     "/{contribution_id}/approve",
     response_model=ContributionRead,
     status_code=status.HTTP_200_OK,
-    summary="Approve a pending Contribution (FR-08)",
+    summary="Approve a pending Contribution",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks contributions:moderate permission."},
@@ -68,7 +68,7 @@ def approve_contribution(
     "/{contribution_id}/reject",
     response_model=ContributionRead,
     status_code=status.HTTP_200_OK,
-    summary="Reject a pending Contribution (FR-08)",
+    summary="Reject a pending Contribution",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks contributions:moderate permission."},

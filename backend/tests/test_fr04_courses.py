@@ -1,6 +1,5 @@
 """API Integration Tests for FR-04: Manage Courses (Admin CRUD).
 
-Author: Tanjil Sarkar (TS) - 2312026
 Covers all confirmation criteria for FR-04 in PassDown SRS §3.1:
 1. Admin can create a new course (201 Created).
 2. Creating a course with a duplicate code returns 409 Conflict.
@@ -10,14 +9,11 @@ Covers all confirmation criteria for FR-04 in PassDown SRS §3.1:
 6. Guests (401) and Students (403) cannot perform mutations.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import ROLE_ADMIN, ROLE_STUDENT, create_access_token
 from app.models.core_material import CoreMaterial
-from app.models.contribution import Contribution
-from app.models.request import Request
 from app.repositories.course_repo import CourseRepository
 from app.repositories.user_repo import UserRepository
 

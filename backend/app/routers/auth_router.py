@@ -31,7 +31,7 @@ from app.schemas.auth_schema import (
 )
 from app.services.auth_service import AuthService
 
-router = APIRouter(prefix="/auth", tags=["Authentication & Profile (FR-01, FR-02)"])
+router = APIRouter(prefix="/auth", tags=["Authentication & Profile"])
 
 ALL_DEFINED_SCOPES = set(ROLE_SCOPES[ROLE_ADMIN])
 
@@ -40,7 +40,7 @@ ALL_DEFINED_SCOPES = set(ROLE_SCOPES[ROLE_ADMIN])
     "/register",
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Register a new Student account (FR-01)",
+    summary="Register a new Student account",
 )
 def register_user(
     payload: UserRegisterRequest,
@@ -55,7 +55,7 @@ def register_user(
     "/login",
     response_model=TokenResponse,
     status_code=status.HTTP_200_OK,
-    summary="Authenticate user and issue expiring scoped JWT (FR-02)",
+    summary="Authenticate user and issue expiring scoped JWT",
 )
 async def login_user(
     request: Request,
@@ -104,7 +104,7 @@ async def login_user(
     "/me",
     response_model=UserRead,
     status_code=status.HTTP_200_OK,
-    summary="Get current authenticated user profile (FR-01)",
+    summary="Get current authenticated user profile",
 )
 def read_current_user_profile(
     current_user: object = Security(get_current_user, scopes=[]),

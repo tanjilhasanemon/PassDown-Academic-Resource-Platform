@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserRegisterRequest(BaseModel):
-    """Request payload schema for public student registration (FR-01).
+    """Request payload schema for public student registration.
 
     Any client-supplied `role` field is accepted only as an ignored optional
     attribute so attempts to pass `role="admin"` never escalate privileges.
@@ -49,7 +49,7 @@ class UserRegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Request payload schema for JSON user authentication (FR-02)."""
+    """Request payload schema for JSON user authentication."""
 
     email: EmailStr = Field(
         ...,
@@ -64,7 +64,7 @@ class LoginRequest(BaseModel):
 
 
 class UserRead(BaseModel):
-    """Safe user profile response schema for /auth/register and /auth/me (FR-01).
+    """Safe user profile response schema for /auth/register and /auth/me.
 
     Never exposes `password_hash` (SRS FR-01 & NFR-01).
     """
@@ -79,7 +79,7 @@ class UserRead(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """Response schema returned upon successful authentication at /auth/login (FR-02)."""
+    """Response schema returned upon successful authentication at /auth/login."""
 
     access_token: str = Field(
         ...,

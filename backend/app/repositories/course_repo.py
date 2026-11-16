@@ -34,10 +34,13 @@ class CourseRepository:
         """
         stmt = select(Course)
         if search and search.strip():
-            pattern = f"%{search.strip()}%"
+            raw = search.strip()
+            pattern = f"%{raw}%"
+            compact_pattern = f"%{raw.replace(' ', '')}%"
             stmt = stmt.where(
                 or_(
                     Course.code.ilike(pattern),
+                    func.replace(Course.code, " ", "").ilike(compact_pattern),
                     Course.title.ilike(pattern),
                 )
             )

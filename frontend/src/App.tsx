@@ -1,9 +1,16 @@
 /**
- * PassDown Editorial Application Workspace — Swiss Academic Archive.
+ * PassDown Editorial Application Workspace — Full-Screen Swiss Academic Archive.
  *
- * Matches the visual identity, layout, light/dark theme system, sidebar filters,
- * dedicated course detail workspace, modal workflows, and 1-click demo sign-in
- * of https://passdown-weld.vercel.app/.
+ * Implements all user stories, acceptance criteria, and exact failure messages for:
+ * - User Registration (with Full Name, Email, Password, Confirm Password, live inline
+ *   validation, and privilege-escalation protection) & View Own Profile (/api/v1/auth/me)
+ * - Stateless OAuth2 + JWT Authentication, In-Memory Token Storage, 5-Scope RBAC
+ *   Enforcement, and Automatic 401 Session Interception
+ * - Public Course Catalogue Browsing, Dynamic ?search= Filtering, Course Detail
+ *   Resource Navigation (Core Materials, Approved Contributions, Course Requests),
+ *   and Defined 404/Empty-State Handling
+ * - Full-Stack Course CRUD, Core Material CRUD, Contribution Submission/Moderation/
+ *   Pending Management, and Resource Request Fulfillment
  *
  * @module App
  */
@@ -49,13 +56,21 @@ import type {
 } from "./types/api";
 import { SECURITY_SCOPES } from "./types/api";
 
-type ActivePage = "catalog" | "course-detail" | "workspace" | "admin" | "login" | "register";
+type ActivePage =
+  | "catalog"
+  | "course-detail"
+  | "workspace"
+  | "profile"
+  | "admin"
+  | "login"
+  | "register";
 type AdminTab = "moderation" | "courses" | "materials";
 type CourseTab = "materials" | "contributions" | "requests";
 type SortOrder = "code_asc" | "title_asc" | "newest";
 type LevelFilter = "ALL" | "100" | "200" | "300" | "400";
 
 const PAGE_SIZE = 6;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const FALLBACK_COURSES: CourseSummary[] = [
   { id: 1, code: "CS 101", title: "Introduction to Computer Science", department: "CS", semester_offered: "Spring 2027", created_at: "2026-10-15T08:00:00Z" },
@@ -85,11 +100,11 @@ const RESOURCE_TYPE_SHORT: Record<ContributionType, string> = {
 };
 
 const PERMISSION_MATRIX_ITEMS = [
-  { slug: "contributions-write", scope: "contributions:write", label: "Submit & Edit Own Pending Contributions", expectedStudent: "Allowed", expectedAdmin: "Allowed" },
-  { slug: "requests-write", scope: "requests:write", label: "Post & Fulfill Course Resource Requests", expectedStudent: "Allowed", expectedAdmin: "Allowed" },
-  { slug: "courses-write", scope: "courses:write", label: "Create, Update & Delete Courses", expectedStudent: "Restricted", expectedAdmin: "Allowed" },
-  { slug: "materials-write", scope: "materials:write", label: "Publish & Manage Curated Core Materials", expectedStudent: "Restricted", expectedAdmin: "Allowed" },
-  { slug: "contributions-moderate", scope: "contributions:moderate", label: "Approve & Reject Pending Contributions", expectedStudent: "Restricted", expectedAdmin: "Allowed" },
+  { slug: "contributions-write", scope: "contributions:write", label: "Submit & Edit Own Pending Contributions", expectedStudent: "Allowed (200)", expectedAdmin: "Allowed (200)" },
+  { slug: "requests-write", scope: "requests:write", label: "Post & Fulfill Course Resource Requests", expectedStudent: "Allowed (200)", expectedAdmin: "Allowed (200)" },
+  { slug: "courses-write", scope: "courses:write", label: "Create, Update & Delete Courses", expectedStudent: "403 Forbidden", expectedAdmin: "Allowed (200)" },
+  { slug: "materials-write", scope: "materials:write", label: "Publish & Manage Curated Core Materials", expectedStudent: "403 Forbidden", expectedAdmin: "Allowed (200)" },
+  { slug: "contributions-moderate", scope: "contributions:moderate", label: "Approve & Reject Pending Contributions", expectedStudent: "403 Forbidden", expectedAdmin: "Allowed (200)" },
 ];
 
 /** Extracts the academic course level ('100' | '200' | '300' | '400') from a course code. */
@@ -165,9 +180,11 @@ export function App() {
   const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
   const [isLoadingCourses, setIsLoadingCourses] = useState<boolean>(true);
   const [backendConnected, setBackendConnected] = useState<boolean>(true);
+  const [catalogLoadError, setCatalogLoadError] = useState<string | null>(null);
 
   // Course Detail Workspace State
   const [selectedCourse, setSelectedCourse] = useState<CourseDetail | null>(null);
+  const [courseDetailError, setCourseDetailError] = useState<string | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false);
   const [activeCourseTab, setActiveCourseTab] = useState<CourseTab>("materials");
   const [materialTypeFilter, setMaterialTypeFilter] = useState<string>("all");
@@ -195,7 +212,6 @@ export function App() {
     created_at: string;
     status?: string;
   } | null>(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
 
   // Form States for Modals
@@ -237,19 +253,25 @@ export function App() {
   const [myStatusFilter, setMyStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [deletingContributionId, setDeletingContributionId] = useState<number | null>(null);
 
-  // Auth Pages State
+  // Authentication & Registration State (FR-01 & FR-02)
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginSuccessNotice, setLoginSuccessNotice] = useState<string | null>(null);
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
 
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [regTestRoleEscalation, setRegTestRoleEscalation] = useState(false);
   const [regError, setRegError] = useState<string | null>(null);
   const [isSubmittingReg, setIsSubmittingReg] = useState(false);
 
+  // Profile (/api/v1/auth/me) State (FR-01 User Story 1B)
   const [verifiedMeProfile, setVerifiedMeProfile] = useState<UserProfile | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [scopeProbeResult, setScopeProbeResult] = useState<{ scope: string; status: number; message: string } | null>(null);
 
   const canManageCourses = Boolean(user && scopes.includes(SECURITY_SCOPES.COURSES_WRITE));
@@ -258,28 +280,45 @@ export function App() {
   const canManageContributions = Boolean(user && scopes.includes(SECURITY_SCOPES.CONTRIBUTIONS_WRITE));
   const canWriteRequests = Boolean(user && scopes.includes(SECURITY_SCOPES.REQUESTS_WRITE));
 
+  // Inline Validation State for Registration (FR-01 User Story 1A Success b)
+  const isRegNameValid = regName.trim().length >= 2;
+  const isRegEmailValid = EMAIL_REGEX.test(regEmail.trim());
+  const isRegPasswordValid = regPassword.length >= 8;
+  const isRegConfirmValid = regConfirmPassword.length >= 8 && regConfirmPassword === regPassword;
+  const isRegistrationFormValid =
+    isRegNameValid && isRegEmailValid && isRegPasswordValid && isRegConfirmValid;
+
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const showToast = useCallback((type: "success" | "error" | "info", text: string) => {
     setToastMessage({ type, text });
     setTimeout(() => {
       setToastMessage((prev) => (prev?.text === text ? null : prev));
-    }, 4200);
+    }, 4500);
   }, []);
 
-  // Load Courses
+  // Load Courses (FR-03)
   const loadCourses = useCallback(async (query?: string) => {
     setIsLoadingCourses(true);
+    setCatalogLoadError(null);
     try {
       const result = await fetchPublicCourses(query);
       setCourses(result);
       setBackendConnected(true);
     } catch {
       setBackendConnected(false);
+      setCatalogLoadError(
+        "System error – unable to load the course catalogue at the moment. Showing offline archive preview."
+      );
       const q = (query || "").trim().toLowerCase();
+      const qCompact = q.replace(/\s+/g, "");
       setCourses(
         FALLBACK_COURSES.filter(
-          (c) => !q || c.code.toLowerCase().includes(q) || c.title.toLowerCase().includes(q)
+          (c) =>
+            !q ||
+            c.code.toLowerCase().includes(q) ||
+            c.code.toLowerCase().replace(/\s+/g, "").includes(qCompact) ||
+            c.title.toLowerCase().includes(q)
         )
       );
     } finally {
@@ -294,7 +333,6 @@ export function App() {
     return () => clearTimeout(timer);
   }, [searchQuery, loadCourses]);
 
-  // Reset pagination count when filters change
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [searchQuery, selectedDept, selectedLevel, sortOrder]);
@@ -333,7 +371,7 @@ export function App() {
     }
   }, [canManageContributions, showToast]);
 
-  // Load all resources for a course in parallel so tab counts are always accurate
+  // Load all resources for a course in parallel
   const loadAllCourseResources = useCallback(async (courseId: number) => {
     setIsLoadingResources(true);
     try {
@@ -354,9 +392,11 @@ export function App() {
     }
   }, []);
 
-  // Open a Course Detail Workspace
+  // Open a Course Detail Workspace (FR-03 Success c & Failure b)
   const handleOpenCourse = async (courseId: number) => {
     setIsLoadingDetail(true);
+    setCourseDetailError(null);
+    setSelectedCourse(null);
     setActivePage("course-detail");
     setMaterialTypeFilter("all");
     setContribTypeFilter("all");
@@ -367,20 +407,53 @@ export function App() {
       setSelectedCourse(detail);
       setNewMaterialCourseId(detail.id);
       await loadAllCourseResources(courseId);
-    } catch {
-      const fallback = courses.find((c) => c.id === courseId) || FALLBACK_COURSES.find((c) => c.id === courseId);
-      if (fallback) {
-        setSelectedCourse({
-          ...fallback,
-          resource_links: {
-            core_materials: `/api/v1/courses/${fallback.id}/core-materials`,
-            approved_contributions: `/api/v1/courses/${fallback.id}/contributions`,
-            requests: `/api/v1/courses/${fallback.id}/requests`,
-          },
-        });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        setCourseDetailError(
+          err.message || "Course not found – the requested course does not exist."
+        );
+      } else {
+        const fallback = courses.find((c) => c.id === courseId) || FALLBACK_COURSES.find((c) => c.id === courseId);
+        if (fallback) {
+          setSelectedCourse({
+            ...fallback,
+            resource_links: {
+              core_materials: `/api/v1/courses/${fallback.id}/core-materials`,
+              approved_contributions: `/api/v1/courses/${fallback.id}/contributions`,
+              requests: `/api/v1/courses/${fallback.id}/requests`,
+            },
+          });
+        } else {
+          setCourseDetailError("Course not found – the requested course does not exist.");
+        }
       }
     } finally {
       setIsLoadingDetail(false);
+    }
+  };
+
+  // Open Own Profile View (/api/v1/auth/me — FR-01 User Story 1B)
+  const handleOpenProfilePage = async () => {
+    setActivePage("profile");
+    setIsLoadingProfile(true);
+    setProfileError(null);
+    try {
+      const profile = await refreshProfileFromMe();
+      setVerifiedMeProfile(profile);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          setProfileError("Session expired or unauthorized – please log in to view your profile.");
+        } else if (err.status === 404) {
+          setProfileError("Profile unavailable – user account could not be found.");
+        } else {
+          setProfileError(err.message);
+        }
+      } else {
+        setProfileError("System error – cannot load profile information at the moment.");
+      }
+    } finally {
+      setIsLoadingProfile(false);
     }
   };
 
@@ -401,7 +474,6 @@ export function App() {
         setEditingMaterial(null);
         setEditingContribution(null);
         setInspectedResource(null);
-        setIsProfileModalOpen(false);
         setIsPermissionsModalOpen(false);
       }
     };
@@ -476,20 +548,30 @@ export function App() {
     [courseRequests, requestStatusFilter]
   );
 
-  // Authentication Handlers
+  // Authentication Handlers (FR-01 & FR-02)
   const executeLogin = async (email: string, password: string) => {
     setLoginError(null);
     setIsSubmittingLogin(true);
     try {
       const session = await login({ email, password });
-      showToast("success", `Welcome back, ${session.user.name}`);
-      if (selectedCourse) {
+      setLoginSuccessNotice(null);
+      setVerifiedMeProfile(session.user);
+      showToast("success", `Authenticated as ${session.user.name} (${session.role})`);
+      if (selectedCourse && !courseDetailError) {
         setActivePage("course-detail");
       } else {
         setActivePage("catalog");
       }
     } catch (err) {
-      setLoginError(err instanceof ApiError ? err.message : "Invalid email or password.");
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          setLoginError("Login failed – invalid email address or password.");
+        } else {
+          setLoginError(err.message);
+        }
+      } else {
+        setLoginError("System error – authentication service is temporarily unavailable.");
+      }
     } finally {
       setIsSubmittingLogin(false);
     }
@@ -503,17 +585,57 @@ export function App() {
   const handleRegisterFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError(null);
+
+    if (!isRegEmailValid || !isRegPasswordValid) {
+      setRegError(
+        "Registration failed – please provide a valid email address and a password of at least 8 characters."
+      );
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      setRegError("Passwords do not match – please confirm your password.");
+      return;
+    }
+
     setIsSubmittingReg(true);
     try {
       const created = await registerStudentAccount({
-        name: regName,
-        email: regEmail,
+        name: regName.trim(),
+        email: regEmail.trim(),
         password: regPassword,
+        role: regTestRoleEscalation ? "admin" : undefined,
       });
-      showToast("success", `Account created for ${created.email}. Signing you in...`);
-      await executeLogin(regEmail, regPassword);
+
+      const escalationNote =
+        regTestRoleEscalation && created.role === "student"
+          ? " (Privilege escalation denied – public registration cannot create an administrator account; assigned role='student'.)"
+          : "";
+
+      const confirmationText = `Account registered for ${created.email} with role="${created.role}".${escalationNote} You can now sign in and view your profile.`;
+      showToast("success", confirmationText);
+      setLoginEmail(created.email);
+      setLoginPassword(regPassword);
+      setLoginSuccessNotice(confirmationText);
+      setRegName("");
+      setRegEmail("");
+      setRegPassword("");
+      setRegConfirmPassword("");
+      setRegTestRoleEscalation(false);
+      setActivePage("login");
     } catch (err) {
-      setRegError(err instanceof ApiError ? err.message : "Registration failed.");
+      if (err instanceof ApiError) {
+        if (err.status === 409) {
+          setRegError("Registration failed – an account with this email address already exists.");
+        } else if (err.status === 422) {
+          setRegError(
+            "Registration failed – please provide a valid email address and a password of at least 8 characters."
+          );
+        } else {
+          setRegError(err.message);
+        }
+      } else {
+        setRegError("System error – unable to complete registration at the moment. Please try again.");
+      }
     } finally {
       setIsSubmittingReg(false);
     }
@@ -537,7 +659,7 @@ export function App() {
       setIsContribCreateModalOpen(false);
       showToast(
         "success",
-        `Submitted "${created.title}". It is now pending moderator approval.`
+        `Submitted "${created.title}" with status="${created.status}". It will appear publicly once approved.`
       );
       if (canModerateContributions) void loadPendingQueue();
     } catch (err) {
@@ -741,15 +863,6 @@ export function App() {
     }
   };
 
-  const handleOpenProfileModal = async () => {
-    setIsProfileModalOpen(true);
-    try {
-      setVerifiedMeProfile(await refreshProfileFromMe());
-    } catch {
-      setVerifiedMeProfile(user);
-    }
-  };
-
   const handleProbeScope = async (slug: string, scopeName: string) => {
     try {
       const res = await verifySecurityScopeEndpoint(slug);
@@ -770,9 +883,9 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen w-full flex flex-col">
       {/* ====================================================================
-          TOP NAVIGATION BAR (Matches https://passdown-weld.vercel.app/)
+          TOP NAVIGATION BAR (Full-Screen Fluid Width)
           ==================================================================== */}
       <header className="pd-navbar">
         <div className="pd-navbar-inner">
@@ -824,6 +937,19 @@ export function App() {
                 </button>
               )}
 
+              {user && (
+                <button
+                  onClick={() => void handleOpenProfilePage()}
+                  className={`pd-nav-link ${activePage === "profile" ? "active" : ""}`}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span>My Profile</span>
+                </button>
+              )}
+
               {user && (canModerateContributions || canManageCourses || canManageMaterials) && (
                 <button
                   onClick={() => {
@@ -860,6 +986,7 @@ export function App() {
                 style={{ backgroundColor: backendConnected ? "var(--success)" : "var(--warning)" }}
               />
               <span>{backendConnected ? "Ready" : "Preview"}</span>
+              <span className="opacity-70">· {role.toUpperCase()}</span>
             </span>
 
             <a
@@ -880,7 +1007,7 @@ export function App() {
             {user ? (
               <>
                 <button
-                  onClick={() => void handleOpenProfileModal()}
+                  onClick={() => void handleOpenProfilePage()}
                   className="pd-btn pd-btn-outline"
                   style={{ padding: "0.4rem 0.75rem" }}
                 >
@@ -950,7 +1077,7 @@ export function App() {
         </div>
       </header>
 
-      {/* Session Expiry Interceptor Notice */}
+      {/* 401 Session Expiry Interceptor Banner (FR-02 Success e & Failure b) */}
       {sessionNotice && (
         <div
           style={{
@@ -958,12 +1085,12 @@ export function App() {
             borderBottom: "1px solid var(--warning-border)",
             color: "var(--warning)",
           }}
-          className="px-4 py-2.5 text-xs"
+          className="px-8 py-3 text-xs"
         >
-          <div className="max-w-[1240px] mx-auto flex items-center justify-between gap-4">
+          <div className="w-full flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="pd-badge pd-badge-warning">SESSION EXPIRED</span>
-              <span>{sessionNotice}</span>
+              <span className="pd-badge pd-badge-warning">401 SESSION INTERCEPTOR</span>
+              <span className="font-medium">{sessionNotice}</span>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -971,9 +1098,10 @@ export function App() {
                   clearSessionNotice();
                   setActivePage("login");
                 }}
-                className="font-semibold underline"
+                className="pd-btn pd-btn-primary"
+                style={{ padding: "0.3rem 0.7rem", fontSize: "0.72rem" }}
               >
-                Sign in again
+                Sign In Again
               </button>
               <button onClick={clearSessionNotice}>✕</button>
             </div>
@@ -999,11 +1127,11 @@ export function App() {
       )}
 
       {/* ====================================================================
-          MAIN WORKSPACE CONTENT
+          MAIN FULL-SCREEN WORKSPACE CONTENT
           ==================================================================== */}
-      <main className="flex-1 max-w-[1240px] w-full mx-auto px-5 py-7">
+      <main className="flex-1 w-full pd-container py-7">
         {/* ==================================================================
-            PAGE 1: COURSE CATALOG (Matches https://passdown-weld.vercel.app/)
+            PAGE 1: COURSE CATALOG (FR-03)
             ================================================================== */}
         {activePage === "catalog" && (
           <>
@@ -1059,6 +1187,20 @@ export function App() {
                 </div>
               </div>
             </section>
+
+            {catalogLoadError && (
+              <div
+                className="mb-4 p-3.5 rounded-xl border text-xs font-medium flex items-center justify-between"
+                style={{
+                  backgroundColor: "var(--warning-bg)",
+                  borderColor: "var(--warning-border)",
+                  color: "var(--warning)",
+                }}
+              >
+                <span>{catalogLoadError}</span>
+                <button onClick={() => setCatalogLoadError(null)}>✕</button>
+              </div>
+            )}
 
             <div className="directory-layout">
               {/* Left Sidebar Filters */}
@@ -1191,16 +1333,19 @@ export function App() {
                 </div>
 
                 {isLoadingCourses ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="pd-courses-grid">
                     {[1, 2, 3, 4, 5, 6].map((n) => (
                       <div key={n} className="pd-card p-6 h-44 animate-pulse" />
                     ))}
                   </div>
                 ) : filteredCourses.length === 0 ? (
+                  /* FR-03 Failure (a): Exact Empty-State Message & Reset Button */
                   <div className="pd-card p-12 text-center space-y-3">
-                    <h3 className="text-base font-bold">No matching courses found</h3>
+                    <h3 className="text-base font-bold">
+                      No courses found matching your search query – try searching by another course code or title.
+                    </h3>
                     <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                      Try clearing your search query or switching department/level filters.
+                      Clear your search keyword or reset the department and level filters to view all offered courses.
                     </p>
                     <button
                       onClick={() => {
@@ -1210,7 +1355,7 @@ export function App() {
                       }}
                       className="pd-btn pd-btn-primary"
                     >
-                      Reset Filters
+                      Reset Search
                     </button>
                   </div>
                 ) : viewMode === "table" ? (
@@ -1228,7 +1373,7 @@ export function App() {
                           <th className="py-3 px-4">Code</th>
                           <th className="py-3 px-4">Course Title</th>
                           <th className="py-3 px-4">Department</th>
-                          <th className="py-3 px-4">Semester</th>
+                          <th className="py-3 px-4">Offered Semester</th>
                           <th className="py-3 px-4 text-right">Archive</th>
                         </tr>
                       </thead>
@@ -1261,7 +1406,7 @@ export function App() {
                     </table>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="pd-courses-grid">
                     {visibleCourses.map((course) => (
                       <article
                         key={course.id}
@@ -1312,7 +1457,7 @@ export function App() {
                   </div>
                 )}
 
-                {/* Pagination Card (Matches https://passdown-weld.vercel.app/) */}
+                {/* Pagination Card */}
                 {filteredCourses.length > 0 && (
                   <div className="pd-card p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex-1 w-full">
@@ -1355,7 +1500,7 @@ export function App() {
         )}
 
         {/* ==================================================================
-            PAGE 2: DEDICATED COURSE DETAIL WORKSPACE (/courses/:id)
+            PAGE 2: DEDICATED COURSE DETAIL WORKSPACE (FR-03 Success c & Failure b)
             ================================================================== */}
         {activePage === "course-detail" && (
           <div className="space-y-5">
@@ -1364,18 +1509,39 @@ export function App() {
                 onClick={() => setActivePage("catalog")}
                 className="pd-btn pd-btn-outline"
               >
-                &larr; Back to Courses
+                &larr; Back to Course Catalogue
               </button>
               {selectedCourse && (
                 <span className="font-mono text-xs" style={{ color: "var(--text-muted)" }}>
-                  Archive ID #{selectedCourse.id}
+                  GET /api/v1/courses/{selectedCourse.id}
                 </span>
               )}
             </div>
 
-            {isLoadingDetail || !selectedCourse ? (
+            {isLoadingDetail ? (
               <div className="pd-card p-10 animate-pulse text-sm">Loading course archive...</div>
-            ) : (
+            ) : courseDetailError ? (
+              /* FR-03 Failure (b): Defined 404 Not Found Response */
+              <div
+                className="pd-card p-10 text-center space-y-4 border"
+                style={{
+                  backgroundColor: "var(--danger-bg)",
+                  borderColor: "var(--danger-border)",
+                  color: "var(--danger)",
+                }}
+              >
+                <span className="pd-badge pd-badge-danger">HTTP 404 NOT FOUND</span>
+                <h2 className="text-lg font-bold">{courseDetailError}</h2>
+                <div>
+                  <button
+                    onClick={() => setActivePage("catalog")}
+                    className="pd-btn pd-btn-primary"
+                  >
+                    Return to Course Catalogue
+                  </button>
+                </div>
+              </div>
+            ) : selectedCourse ? (
               <>
                 <section className="pd-card p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -1391,9 +1557,14 @@ export function App() {
                       <h1 className="text-2xl font-extrabold tracking-tight">
                         {selectedCourse.title}
                       </h1>
-                      <p className="text-xs mt-1.5" style={{ color: "var(--text-secondary)" }}>
-                        Verified course repository containing official core materials, peer-reviewed student contributions, and missing-resource requests.
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] font-mono" style={{ color: "var(--text-muted)" }}>
+                        <span>Resource Links:</span>
+                        <code>{selectedCourse.resource_links.core_materials}</code>
+                        <span>·</span>
+                        <code>{selectedCourse.resource_links.approved_contributions}</code>
+                        <span>·</span>
+                        <code>{selectedCourse.resource_links.requests}</code>
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -1442,7 +1613,7 @@ export function App() {
                   </div>
                 </section>
 
-                {/* Primary Segmented Tabs + Secondary Type/Status Filter Pills */}
+                {/* Primary Segmented Tabs (Core Materials, Approved Contributions, Course Requests) */}
                 <div className="pd-card p-4 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div
@@ -1463,7 +1634,7 @@ export function App() {
                         onClick={() => setActiveCourseTab("contributions")}
                         className={`pd-nav-link ${activeCourseTab === "contributions" ? "active" : ""}`}
                       >
-                        <span>Student Contributions</span>
+                        <span>Approved Contributions</span>
                         <span className="font-mono text-xs opacity-80">
                           ({approvedContributions.length})
                         </span>
@@ -1472,7 +1643,7 @@ export function App() {
                         onClick={() => setActiveCourseTab("requests")}
                         className={`pd-nav-link ${activeCourseTab === "requests" ? "active" : ""}`}
                       >
-                        <span>Material Requests</span>
+                        <span>Course Requests</span>
                         <span className="font-mono text-xs opacity-80">({courseRequests.length})</span>
                       </button>
                     </div>
@@ -1546,7 +1717,7 @@ export function App() {
 
                 {/* Tab Content */}
                 {isLoadingResources ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="pd-courses-grid">
                     {[1, 2, 3, 4].map((n) => (
                       <div key={n} className="pd-card p-6 h-36 animate-pulse" />
                     ))}
@@ -1560,7 +1731,7 @@ export function App() {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="pd-courses-grid">
                       {displayedCoreMaterials.map((mat) => (
                         <article key={mat.id} className="pd-card p-5 flex flex-col justify-between">
                           <div>
@@ -1668,7 +1839,7 @@ export function App() {
                       )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="pd-courses-grid">
                       {displayedContributions.map((contrib) => (
                         <article key={contrib.id} className="pd-card p-5 flex flex-col justify-between">
                           <div>
@@ -1677,7 +1848,7 @@ export function App() {
                                 <span className="pd-badge pd-badge-neutral">
                                   {RESOURCE_TYPE_SHORT[contrib.type] || contrib.type}
                                 </span>
-                                <span className="pd-badge pd-badge-brand">Peer Verified</span>
+                                <span className="pd-badge pd-badge-brand">Approved Contribution</span>
                               </div>
                               <span className="font-mono text-[11px]" style={{ color: "var(--text-muted)" }}>
                                 {formatArchiveDate(contrib.created_at)}
@@ -1814,12 +1985,166 @@ export function App() {
                   </div>
                 )}
               </>
-            )}
+            ) : null}
           </div>
         )}
 
         {/* ==================================================================
-            PAGE 3: MY WORKSPACE (Personal Contributions & Status Tracker)
+            PAGE 3: MY PROFILE VIEW (/api/v1/auth/me — FR-01 User Story 1B)
+            ================================================================== */}
+        {activePage === "profile" && (
+          <div className="max-w-3xl mx-auto space-y-6">
+            <section className="editorial-masthead">
+              <div>
+                <div className="masthead-kicker">AUTHENTICATED SESSION IDENTITY · /API/V1/AUTH/ME</div>
+                <h1 className="masthead-title">My Account Profile</h1>
+                <p className="masthead-subtitle">
+                  Verified session profile retrieved via Bearer JWT authentication. Sensitive credentials (<code>password_hash</code>) are strictly excluded by the response schema.
+                </p>
+              </div>
+              <button
+                onClick={() => void handleOpenProfilePage()}
+                className="pd-btn pd-btn-outline"
+              >
+                Refresh /auth/me
+              </button>
+            </section>
+
+            {isLoadingProfile ? (
+              <div className="pd-card p-8 animate-pulse text-sm">Loading profile from /api/v1/auth/me...</div>
+            ) : profileError ? (
+              <div
+                className="pd-card p-6 border text-sm font-medium"
+                style={{
+                  backgroundColor: "var(--danger-bg)",
+                  borderColor: "var(--danger-border)",
+                  color: "var(--danger)",
+                }}
+              >
+                {profileError}
+              </div>
+            ) : (verifiedMeProfile || user) ? (
+              <div className="pd-card p-6 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div
+                    className="p-4 rounded-xl border"
+                    style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border-subtle)" }}
+                  >
+                    <div className="font-mono text-[11px] uppercase" style={{ color: "var(--text-muted)" }}>
+                      Full Name
+                    </div>
+                    <div className="text-base font-bold mt-1">
+                      {(verifiedMeProfile || user)?.name}
+                    </div>
+                  </div>
+
+                  <div
+                    className="p-4 rounded-xl border"
+                    style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border-subtle)" }}
+                  >
+                    <div className="font-mono text-[11px] uppercase" style={{ color: "var(--text-muted)" }}>
+                      Email Address
+                    </div>
+                    <div className="text-base font-mono font-semibold mt-1">
+                      {(verifiedMeProfile || user)?.email}
+                    </div>
+                  </div>
+
+                  <div
+                    className="p-4 rounded-xl border"
+                    style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border-subtle)" }}
+                  >
+                    <div className="font-mono text-[11px] uppercase" style={{ color: "var(--text-muted)" }}>
+                      Role Badge &amp; Account ID
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <span className="pd-badge pd-badge-brand uppercase">
+                        {(verifiedMeProfile || user)?.role}
+                      </span>
+                      <span className="font-mono text-xs" style={{ color: "var(--text-secondary)" }}>
+                        ID #{(verifiedMeProfile || user)?.id}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div
+                    className="p-4 rounded-xl border"
+                    style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border-subtle)" }}
+                  >
+                    <div className="font-mono text-[11px] uppercase" style={{ color: "var(--text-muted)" }}>
+                      Account Creation Date
+                    </div>
+                    <div className="text-sm font-mono font-semibold mt-1.5">
+                      {formatArchiveDate((verifiedMeProfile || user)!.created_at)}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="p-4 rounded-xl border space-y-2"
+                  style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border-subtle)" }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-semibold">
+                      In-Memory JWT Session &amp; Granted Security Scopes
+                    </span>
+                    <span className="pd-badge pd-badge-brand">password_hash Excluded</span>
+                  </div>
+                  {tokenPreview && (
+                    <div className="font-mono text-xs" style={{ color: "var(--text-secondary)" }}>
+                      Bearer Token (In-Memory): <code>{tokenPreview}</code>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {scopes.map((sc) => (
+                      <span key={sc} className="pd-badge pd-badge-neutral">
+                        {sc}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-mono text-xs font-semibold mb-2" style={{ color: "var(--text-muted)" }}>
+                    RAW /API/V1/AUTH/ME JSON PAYLOAD:
+                  </div>
+                  <pre
+                    className="text-xs p-4 rounded-xl overflow-x-auto font-mono border"
+                    style={{
+                      backgroundColor: "var(--bg-primary)",
+                      borderColor: "var(--border-subtle)",
+                    }}
+                  >
+                    {JSON.stringify(verifiedMeProfile || user, null, 2)}
+                  </pre>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <button
+                    onClick={async () => {
+                      await simulate401Expiration();
+                    }}
+                    className="pd-btn pd-btn-outline"
+                  >
+                    Simulate 401 Session Timeout
+                  </button>
+                  <button
+                    onClick={() => {
+                      setScopeProbeResult(null);
+                      setIsPermissionsModalOpen(true);
+                    }}
+                    className="pd-btn pd-btn-primary"
+                  >
+                    Open RBAC Scope Inspector
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* ==================================================================
+            PAGE 4: MY WORKSPACE (Personal Contributions & Status Tracker)
             ================================================================== */}
         {activePage === "workspace" && user && (
           <div className="space-y-6">
@@ -1981,7 +2306,7 @@ export function App() {
         )}
 
         {/* ==================================================================
-            PAGE 4: ADMIN CONSOLE (Moderation Queue, Courses, Core Materials)
+            PAGE 5: ADMIN CONSOLE (Moderation Queue, Courses, Core Materials)
             ================================================================== */}
         {activePage === "admin" && user && (
           <div className="space-y-6">
@@ -2307,7 +2632,7 @@ export function App() {
         )}
 
         {/* ==================================================================
-            PAGE 5: DEDICATED SIGN IN PAGE (/login)
+            PAGE 6: DEDICATED SIGN IN PAGE (/login — FR-02)
             ================================================================== */}
         {activePage === "login" && (
           <div className="max-w-md mx-auto py-8">
@@ -2319,6 +2644,19 @@ export function App() {
                   Access your contributor workspace, submit study resources, or moderate course archives.
                 </p>
               </div>
+
+              {loginSuccessNotice && (
+                <div
+                  className="p-3 rounded-lg text-xs font-medium border"
+                  style={{
+                    backgroundColor: "var(--success-bg)",
+                    borderColor: "var(--success-border)",
+                    color: "var(--success)",
+                  }}
+                >
+                  {loginSuccessNotice}
+                </div>
+              )}
 
               {loginError && (
                 <div
@@ -2335,7 +2673,7 @@ export function App() {
 
               <form onSubmit={handleLoginFormSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold mb-1">University Email</label>
+                  <label className="block text-xs font-semibold mb-1">Email Address</label>
                   <input
                     type="email"
                     required
@@ -2418,16 +2756,16 @@ export function App() {
         )}
 
         {/* ==================================================================
-            PAGE 6: DEDICATED REGISTER PAGE (/register)
+            PAGE 7: DEDICATED REGISTER PAGE (/register — FR-01 User Story 1A)
             ================================================================== */}
         {activePage === "register" && (
-          <div className="max-w-md mx-auto py-8">
+          <div className="max-w-lg mx-auto py-8">
             <div className="pd-card p-7 space-y-5">
               <div>
                 <span className="pd-badge pd-badge-brand mb-2">STUDENT REGISTRATION</span>
                 <h1 className="text-2xl font-extrabold tracking-tight mt-1">Create Your Account</h1>
                 <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
-                  Join the IUB academic resource-sharing community to contribute notes and request study materials.
+                  Register with your full name, university email, and password to contribute and request study materials.
                 </p>
               </div>
 
@@ -2455,9 +2793,15 @@ export function App() {
                     onChange={(e) => setRegName(e.target.value)}
                     className="pd-input"
                   />
+                  {regName.length > 0 && !isRegNameValid && (
+                    <p className="text-[11px] mt-1" style={{ color: "var(--danger)" }}>
+                      Full name must contain at least 2 non-whitespace characters.
+                    </p>
+                  )}
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold mb-1">University Email</label>
+                  <label className="block text-xs font-semibold mb-1">Email Address</label>
                   <input
                     type="email"
                     required
@@ -2466,9 +2810,17 @@ export function App() {
                     onChange={(e) => setRegEmail(e.target.value)}
                     className="pd-input"
                   />
+                  {regEmail.length > 0 && !isRegEmailValid && (
+                    <p className="text-[11px] mt-1" style={{ color: "var(--danger)" }}>
+                      Please enter a valid email address format (e.g. name@iub.edu.bd).
+                    </p>
+                  )}
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Password (min 8 characters)</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    Password (minimum 8 characters)
+                  </label>
                   <input
                     type="password"
                     required
@@ -2477,13 +2829,74 @@ export function App() {
                     onChange={(e) => setRegPassword(e.target.value)}
                     className="pd-input"
                   />
+                  {regPassword.length > 0 && !isRegPasswordValid && (
+                    <p className="text-[11px] mt-1" style={{ color: "var(--danger)" }}>
+                      Password must be at least 8 characters long.
+                    </p>
+                  )}
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Confirm Password</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••••••"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    className="pd-input"
+                  />
+                  {regConfirmPassword.length > 0 && !isRegConfirmValid && (
+                    <p className="text-[11px] mt-1" style={{ color: "var(--danger)" }}>
+                      Confirm password must match the password above.
+                    </p>
+                  )}
+                </div>
+
+                {/* Live Inline Security Policy Checklist (FR-01 Success b) */}
+                <div
+                  className="p-3.5 rounded-xl border space-y-1.5 text-xs"
+                  style={{
+                    backgroundColor: "var(--bg-primary)",
+                    borderColor: "var(--border-subtle)",
+                  }}
+                >
+                  <div className="font-mono text-[11px] font-semibold uppercase" style={{ color: "var(--text-muted)" }}>
+                    Inline Security &amp; Validation Policy
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 font-mono text-[11px]">
+                    <span style={{ color: isRegNameValid ? "var(--success)" : "var(--text-muted)" }}>
+                      {isRegNameValid ? "✓" : "○"} Full Name (2+ chars)
+                    </span>
+                    <span style={{ color: isRegEmailValid ? "var(--success)" : "var(--text-muted)" }}>
+                      {isRegEmailValid ? "✓" : "○"} Valid Email Format
+                    </span>
+                    <span style={{ color: isRegPasswordValid ? "var(--success)" : "var(--text-muted)" }}>
+                      {isRegPasswordValid ? "✓" : "○"} Password (8+ chars)
+                    </span>
+                    <span style={{ color: isRegConfirmValid ? "var(--success)" : "var(--text-muted)" }}>
+                      {isRegConfirmValid ? "✓" : "○"} Passwords Match
+                    </span>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }}>
+                  <input
+                    type="checkbox"
+                    checked={regTestRoleEscalation}
+                    onChange={(e) => setRegTestRoleEscalation(e.target.checked)}
+                  />
+                  <span>
+                    Verify privilege-escalation protection (inject <code>role=&quot;admin&quot;</code> in request payload)
+                  </span>
+                </label>
+
                 <button
                   type="submit"
-                  disabled={isSubmittingReg}
+                  disabled={isSubmittingReg || !isRegistrationFormValid}
                   className="pd-btn pd-btn-primary w-full py-2.5"
                 >
-                  {isSubmittingReg ? "Creating Account..." : "Register Account"}
+                  {isSubmittingReg ? "Creating Account..." : "Create Account"}
                 </button>
               </form>
 
@@ -2820,58 +3233,10 @@ export function App() {
         </div>
       )}
 
-      {/* Modal 6: User Profile */}
-      {isProfileModalOpen && (
-        <div className="pd-modal-backdrop" onClick={() => setIsProfileModalOpen(false)}>
-          <div className="pd-modal-card space-y-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">Account Profile</h2>
-              <button onClick={() => setIsProfileModalOpen(false)}>✕</button>
-            </div>
-            {tokenPreview && (
-              <div
-                className="p-2.5 rounded-lg font-mono text-[11px] break-all border"
-                style={{
-                  backgroundColor: "var(--bg-primary)",
-                  borderColor: "var(--border-subtle)",
-                }}
-              >
-                Active In-Memory JWT: {tokenPreview}
-              </div>
-            )}
-            {verifiedMeProfile && (
-              <pre
-                className="text-xs p-3.5 rounded-lg overflow-x-auto font-mono border"
-                style={{
-                  backgroundColor: "var(--bg-primary)",
-                  borderColor: "var(--border-subtle)",
-                }}
-              >
-                {JSON.stringify(verifiedMeProfile, null, 2)}
-              </pre>
-            )}
-            <div className="flex items-center justify-between pt-2">
-              <button
-                onClick={async () => {
-                  setIsProfileModalOpen(false);
-                  await simulate401Expiration();
-                }}
-                className="pd-btn pd-btn-outline"
-              >
-                Test Session Expiry
-              </button>
-              <button onClick={() => setIsProfileModalOpen(false)} className="pd-btn pd-btn-primary">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 7: Live Role & Permission Scopes Matrix */}
+      {/* Modal 6: Live Role & Permission Scopes Matrix */}
       {isPermissionsModalOpen && (
         <div className="pd-modal-backdrop" onClick={() => setIsPermissionsModalOpen(false)}>
-          <div className="pd-modal-card space-y-4" style={{ maxWidth: "680px" }} onClick={(e) => e.stopPropagation()}>
+          <div className="pd-modal-card space-y-4" style={{ maxWidth: "700px" }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold">OAuth2 Role &amp; Permission Scopes</h2>
@@ -2936,21 +3301,29 @@ export function App() {
       )}
 
       {/* ====================================================================
-          EDITORIAL ARCHIVE FOOTER (Matches https://passdown-weld.vercel.app/)
+          EDITORIAL ARCHIVE FOOTER (Full-Screen Fluid Width)
           ==================================================================== */}
       <footer
-        className="mt-12 border-t py-6 px-5 text-xs"
+        className="mt-12 border-t py-6 text-xs w-full"
         style={{
           backgroundColor: "var(--bg-card)",
           borderColor: "var(--border-subtle)",
           color: "var(--text-secondary)",
         }}
       >
-        <div className="max-w-[1240px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="pd-container flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
             <strong>PassDown v1.0</strong> · Academic Course Archive &amp; Resource-Sharing Platform · Independent University, Bangladesh (IUB)
           </div>
-          <div className="font-mono text-[11px]">
+          <div className="flex items-center gap-4 font-mono text-[11px]">
+            <button
+              onClick={() => void handleOpenCourse(99999)}
+              className="hover:underline"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Verify 404 Course Route
+            </button>
+            <span>·</span>
             <a
               href="http://127.0.0.1:8000/docs"
               target="_blank"

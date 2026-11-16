@@ -75,3 +75,14 @@ an existing PostgreSQL database, create the FR-10 table and indexes using:
    );
    CREATE INDEX ix_requests_course_id ON requests(course_id);
    CREATE INDEX ix_requests_submitted_by ON requests(submitted_by);
+
+
+   .. automodule:: app.models.core_material
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: app.repositories.core_material_repo
+   :members:
+   :undoc-members:
+   :show-inheritance:

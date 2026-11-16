@@ -46,3 +46,9 @@ authorized for Contributions of any status.
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+.. automodule:: app.services.core_material_service
+   :members:
+   :undoc-members:
+   :show-inheritance:

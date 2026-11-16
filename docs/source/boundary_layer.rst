@@ -138,3 +138,9 @@ Pydantic Validation & Serialization Schemas
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+.. automodule:: app.routers.core_material_router
+   :members:
+   :undoc-members:
+   :show-inheritance:

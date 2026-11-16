@@ -3,8 +3,7 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   PassDown Editorial Design System — Swiss Academic Archive
-   Matches https://passdown-weld.vercel.app/
+   PassDown Editorial Design System — Full-Screen Swiss Academic Archive
    ========================================================================== */
 
 :root,
@@ -82,8 +81,16 @@
   box-sizing: border-box;
 }
 
-body {
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
   margin: 0;
+  padding: 0;
+}
+
+body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -98,25 +105,46 @@ pre,
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* Full-Screen Container */
+.pd-container {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+@media (max-width: 640px) {
+  .pd-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 /* Top Navbar */
 .pd-navbar {
   position: sticky;
   top: 0;
   z-index: 40;
+  width: 100%;
   background-color: var(--bg-card);
   border-bottom: 1px solid var(--border-subtle);
   backdrop-filter: blur(10px);
 }
 
 .pd-navbar-inner {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 0 1.25rem;
+  width: 100%;
+  padding: 0 2rem;
   height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .pd-navbar-inner {
+    padding: 0 1rem;
+  }
 }
 
 .pd-brand {
@@ -207,7 +235,7 @@ pre,
 }
 
 .pd-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -329,7 +357,7 @@ pre,
 }
 
 .masthead-title {
-  font-size: 1.75rem;
+  font-size: 1.85rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-primary);
@@ -337,20 +365,20 @@ pre,
 }
 
 .masthead-subtitle {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--text-secondary);
-  max-width: 620px;
+  max-width: 780px;
   margin: 0;
 }
 
 .masthead-metrics {
   display: flex;
   align-items: center;
-  gap: 1.15rem;
+  gap: 1.25rem;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  padding: 0.9rem 1.25rem;
+  padding: 0.95rem 1.35rem;
   flex-wrap: wrap;
 }
 
@@ -361,7 +389,7 @@ pre,
 
 .metric-value {
   font-family: "JetBrains Mono", monospace;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
@@ -383,15 +411,16 @@ pre,
   background-color: var(--border-subtle);
 }
 
-/* Directory 2-Column Layout */
+/* Directory Full-Screen 2-Column Layout */
 .directory-layout {
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: 260px 1fr;
   gap: 1.5rem;
   align-items: start;
+  width: 100%;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .directory-layout {
     grid-template-columns: 1fr;
   }
@@ -452,6 +481,19 @@ pre,
   font-weight: 600;
 }
 
+/* Responsive Widescreen Course Grid */
+.pd-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.15rem;
+}
+
+@media (max-width: 640px) {
+  .pd-courses-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Cards & Inputs */
 .pd-card {
   background-color: var(--bg-card);
@@ -506,7 +548,7 @@ pre,
   border-radius: 14px;
   box-shadow: var(--shadow-elevated);
   width: 100%;
-  max-width: 540px;
+  max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
   padding: 1.5rem;

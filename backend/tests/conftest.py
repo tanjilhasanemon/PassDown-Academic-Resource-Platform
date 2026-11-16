@@ -1,4 +1,4 @@
-﻿"""Shared Pytest Fixtures for PassDown Unit and Integration Tests."""
+"""Shared Pytest Fixtures for Unit and Integration Tests."""
 
 from collections.abc import Generator
 
@@ -8,9 +8,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import app as fastapi_app
-from app.models import Contribution, Course, User  # noqa: F401
+from app.models import (  # noqa: F401
+    Contribution,
+    CoreMaterial,
+    Course,
+    Request,
+    User,
+)
 
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -43,7 +50,10 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
     def override_get_db() -> Generator[Session, None, None]:
         yield db_session
 
+    previous_auto_seed = settings.AUTO_SEED_ON_STARTUP
+    settings.AUTO_SEED_ON_STARTUP = False
     fastapi_app.dependency_overrides[get_db] = override_get_db
     with TestClient(fastapi_app) as test_client:
         yield test_client
     fastapi_app.dependency_overrides.clear()
+    settings.AUTO_SEED_ON_STARTUP = previous_auto_seed

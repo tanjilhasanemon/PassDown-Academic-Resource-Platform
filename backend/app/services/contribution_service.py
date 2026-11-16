@@ -306,13 +306,14 @@ class ContributionService:
 
     @staticmethod
     def list_public_contributions(
-        db: Session, *, course_id: int
+        db: Session, *, course_id: int, material_type: str | None = None
     ) -> list[ContributionRead]:
-        """Returns approved Contributions for an existing course only.
+        """Returns approved Contributions for an existing course, optionally filtered by type.
 
         Args:
             db (Session): Active SQLAlchemy database session.
             course_id (int): Course whose public Contributions are requested.
+            material_type (str | None): Optional material type filter.
 
         Raises:
             HTTPException (404): If the course does not exist.
@@ -325,7 +326,9 @@ class ContributionService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Course not found – the requested course does not exist.",
             )
-        contributions = ContributionRepository.list_approved_by_course(db, course_id)
+        contributions = ContributionRepository.list_approved_by_course(
+            db, course_id, material_type=material_type
+        )
         return [
             ContributionRead.model_validate(contribution)
             for contribution in contributions

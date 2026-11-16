@@ -4,7 +4,7 @@
  * Mounts the PassDown SPA wrapped inside the in-memory `AuthProvider`.
  *
  * @module main
- * @author Tanjil Hasan Emon (THE - 2331024)
+ * @author Tanjil Hasan Emon
  */
 
 import React from "react";

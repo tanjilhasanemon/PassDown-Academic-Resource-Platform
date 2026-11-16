@@ -9,14 +9,14 @@ from app.schemas.auth_schema import UserRead
 from app.schemas.request_schema import RequestRead
 from app.services.request_service import RequestService
 
-router = APIRouter(prefix="/requests", tags=["Requests (FR-12)"])
+router = APIRouter(prefix="/requests", tags=["Requests"])
 
 
 @router.patch(
     "/{request_id}/fulfill",
     response_model=RequestRead,
     status_code=status.HTTP_200_OK,
-    summary="Fulfill an owned request or an Admin-managed request (FR-12)",
+    summary="Fulfill an owned request or an Admin-managed request",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller is not the owner or an Admin."},
@@ -44,7 +44,7 @@ def fulfill_request(
 @router.delete(
     "/{request_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete an owned request or an Admin-managed request (FR-12)",
+    summary="Delete an owned request or an Admin-managed request",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller is not the owner or an Admin."},

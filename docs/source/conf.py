@@ -1,10 +1,8 @@
-"""Sphinx Configuration for PassDown Source Code Documentation (SL# 7).
+"""Sphinx Configuration for PassDown Source Code Documentation.
 
 Configures autodoc, napoleon (Google-style docstrings), and viewcode to
-automatically extract API reference documentation across all 3 ECB layers:
-- Entity Layer (`app.models`, `app.repositories`, `app.core.database`)
-- Control Layer (`app.services`, `app.core.security`, `app.core.config`, `app.core.seed`)
-- Boundary Layer (`app.routers`, `app.schemas`, `app.main`)
+extract API reference documentation across the Entity, Control, and Boundary
+architectural layers.
 """
 
 import os
@@ -13,8 +11,8 @@ import sys
 sys.path.insert(0, os.path.abspath("../../backend"))
 
 project = "PassDown — Academic Resource-Sharing Platform"
-copyright = "2026, Tanjil Hasan Emon (THE), Tanjil Sarkar (TS), Md Jawad Abdullah (MJA), S M Mashraful Islam (SMMI)"
-author = "Tanjil Hasan Emon (2331024) & PassDown Team"
+copyright = "2026, PassDown Engineering"
+author = "PassDown Engineering"
 release = "1.0.0"
 
 extensions = [

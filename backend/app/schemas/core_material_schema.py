@@ -1,6 +1,6 @@
 """Core Material Pydantic Schemas (ECB Boundary Layer).
 
-Defines validated payloads and response models for Admin Core Material CRUD (FR-06).
+Defines validated payloads and response models for Admin Core Material CRUD.
 """
 
 from datetime import datetime

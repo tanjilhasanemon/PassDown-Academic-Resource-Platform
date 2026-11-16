@@ -1,7 +1,7 @@
-"""Application Configuration Module (Control Layer Support).
+"""Application Configuration Module.
 
-Loads environment variables for database persistence, JWT signing, and CORS
-origins in compliance with PassDown SRS §3.3.4 and NFR-04.
+Loads environment variables for database persistence, JWT signing, CORS
+origins, and automatic startup seeding.
 """
 
 import os
@@ -12,12 +12,13 @@ class Settings:
 
     Attributes:
         PROJECT_NAME (str): Display title of the REST API service.
-        API_V1_PREFIX (str): Base route prefix mandated by SRS §3.3.2.
+        API_V1_PREFIX (str): Base route prefix for versioned API endpoints.
         DATABASE_URL (str): SQLAlchemy connection string (PostgreSQL or SQLite).
         JWT_SECRET (str): Secret key used to sign and verify JWT tokens.
         JWT_ALGORITHM (str): Cryptographic signing algorithm for JWTs.
         JWT_EXPIRE_MINUTES (int): Token expiration window in minutes.
         CORS_ORIGINS (list[str]): Permitted frontend origins for CORS middleware.
+        AUTO_SEED_ON_STARTUP (bool): Whether to initialize schema and seed default records on startup.
     """
 
     PROJECT_NAME: str = "PassDown API"
@@ -30,9 +31,14 @@ class Settings:
     JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
     CORS_ORIGINS: list[str] = [
         origin.strip()
-        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        for origin in os.getenv(
+            "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+        ).split(",")
         if origin.strip()
     ]
+    AUTO_SEED_ON_STARTUP: bool = (
+        os.getenv("AUTO_SEED_DEMO_DATA", "true").strip().lower() == "true"
+    )
 
 
 settings = Settings()

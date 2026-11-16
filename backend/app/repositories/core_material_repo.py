@@ -1,7 +1,7 @@
 """Core Material Repository Module (ECB Entity Layer).
 
 Provides persistence and querying operations for CoreMaterial entities,
-supporting both Admin CRUD (FR-06) and Public listing/filtering (FR-05).
+supporting both Admin CRUD and Public listing/filtering.
 """
 
 from sqlalchemy import select

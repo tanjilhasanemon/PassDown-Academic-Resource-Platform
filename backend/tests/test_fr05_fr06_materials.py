@@ -1,10 +1,9 @@
 """API Integration Tests for FR-05 and FR-06: Core Materials.
 
-Author: Tanjil Sarkar (TS) - 2312026
 Covers confirmation criteria for Core Materials:
-1. Admin can add, update, and delete Core Materials (FR-06).
+1. Admin can add, update, and delete Core Materials.
 2. Invalid URLs (http://) or invalid types return 422.
-3. Public users can list materials and filter by type (FR-05).
+3. Public users can list materials and filter by type.
 4. Guests (401) and Students (403) cannot mutate Core Materials.
 """
 
@@ -13,7 +12,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import ROLE_ADMIN, ROLE_STUDENT, create_access_token
-from app.models.core_material import CoreMaterial
 from app.repositories.core_material_repo import CoreMaterialRepository
 from app.repositories.course_repo import CourseRepository
 from app.repositories.user_repo import UserRepository
@@ -131,3 +129,34 @@ def test_fr06_guest_and_student_denied(client: TestClient, db_session: Session) 
 
     # Student -> 403
     assert client.post(f"/api/v1/courses/{course_id}/core-materials", json=payload, headers=student_headers).status_code == 403
+
+
+def test_fr05_public_filter_approved_contributions_by_type(
+    client: TestClient, db_session: Session
+) -> None:
+    """Given public access, GET /courses/{id}/contributions?material_type= filters approved contributions."""
+    course_id = create_test_course(db_session)
+    student_headers = create_student_headers(db_session)
+    admin_headers = create_admin_headers(db_session)
+
+    res1 = client.post(
+        f"/api/v1/courses/{course_id}/contributions",
+        json={"title": "Approved Slides", "type": "slides", "url": "https://example.com/c1.pdf"},
+        headers=student_headers,
+    )
+    res2 = client.post(
+        f"/api/v1/courses/{course_id}/contributions",
+        json={"title": "Approved Notes", "type": "notes", "url": "https://example.com/c2.pdf"},
+        headers=student_headers,
+    )
+    client.patch(f"/api/v1/contributions/{res1.json()['id']}/approve", headers=admin_headers)
+    client.patch(f"/api/v1/contributions/{res2.json()['id']}/approve", headers=admin_headers)
+
+    all_contrib = client.get(f"/api/v1/courses/{course_id}/contributions")
+    assert all_contrib.status_code == 200
+    assert len(all_contrib.json()) == 2
+
+    filtered = client.get(f"/api/v1/courses/{course_id}/contributions?material_type=notes")
+    assert filtered.status_code == 200
+    assert len(filtered.json()) == 1
+    assert filtered.json()[0]["title"] == "Approved Notes"

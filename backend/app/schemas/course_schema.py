@@ -15,20 +15,20 @@ class CourseResourceLinks(BaseModel):
 
     core_materials: str = Field(
         ...,
-        description="Public endpoint for admin-curated Core Materials (FR-05).",
+        description="Public endpoint for admin-curated Core Materials.",
     )
     approved_contributions: str = Field(
         ...,
-        description="Public endpoint for approved student Contributions (FR-05).",
+        description="Public endpoint for approved student Contributions.",
     )
     requests: str = Field(
         ...,
-        description="Public endpoint for course missing-material Requests (FR-11).",
+        description="Public endpoint for course missing-material Requests.",
     )
 
 
 class CourseCreate(BaseModel):
-    """Validated payload for creating a new course (FR-04).
+    """Validated payload for creating a new course.
 
     Attributes:
         code (str): Unique course code (e.g., 'CSE 451').
@@ -44,7 +44,7 @@ class CourseCreate(BaseModel):
 
 
 class CourseUpdate(BaseModel):
-    """Validated payload for updating an existing course (FR-04).
+    """Validated payload for updating an existing course.
 
     All fields are optional to allow partial updates.
     """
@@ -56,7 +56,7 @@ class CourseUpdate(BaseModel):
 
 
 class CourseRead(BaseModel):
-    """Summary schema for a Course record in the public catalogue list (FR-03)."""
+    """Summary schema for a Course record in the public catalogue list."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -69,6 +69,6 @@ class CourseRead(BaseModel):
 
 
 class CourseDetailRead(CourseRead):
-    """Detailed Course response schema with public resource section links (FR-03)."""
+    """Detailed Course response schema with public resource section links."""
 
     resource_links: CourseResourceLinks

@@ -33,7 +33,7 @@
 
 2. **End-to-End Type Safety:** TypeScript on the frontend combined with Python 3.11+ type annotations (`typing` + `Pydantic v2`) on the backend eliminates runtime type mismatches across the `/api/v1` REST boundary and directly satisfies `NFR-08` (consistent JSON error shapes) and `NFR-09` (shared role/scope names and API types).
 
-3. **Ecosystem Maturity for Security & Testing:** Python offers first-class cryptographic and authentication libraries (`passlib[bcrypt]`, `python-jose` / `PyJWT`) required by `FR-01` and `FR-02`, alongside `pytest` for high-coverage unit and integration testing (`NFR-12`).
+3. **Ecosystem Maturity for Security & Testing:** Python offers first-class cryptographic and authentication libraries (`bcrypt`, `python-jose` / `PyJWT`) required by `FR-01` and `FR-02`, alongside `pytest` for high-coverage unit and integration testing (`NFR-12`).
 
 #### 1.2 Frameworks & Core Libraries
 

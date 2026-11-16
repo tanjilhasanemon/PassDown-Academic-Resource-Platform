@@ -1,12 +1,10 @@
 ## Summary of Changes
-- **SRS Requirement ID:** `FR-XX`
-- **Trello Card Link:** [Link to Trello Card]
-- **Author Initials:** `THE` / `TS` / `MJA` / `SMMI`
+- **Feature / Module:** [Brief description of the feature, fix, or architectural layer]
+- **Issue / Task Reference:** [Link to issue or task board card]
 
-## SRS Definition of Done Checklist (SRS §4.3)
-- [ ] User story and Given/When/Then confirmation criteria pass
-- [ ] Backend authorization is enforced and tested (including 401/403 negative cases)
-- [ ] Preserves ECB 4-layer separation (`Routers -> Services -> Repositories -> Schemas`)
-- [ ] Google-style Python docstrings / TSDoc comments added for Sphinx/TypeDoc
-- [ ] Automated `pytest` tests and `ruff` PEP 8 linter checks pass in GitHub Actions
-- [ ] No `.env` secrets or personal credentials committed
+## Engineering Definition of Done Checklist
+- [ ] All acceptance criteria and edge cases (including `401`, `403`, `404`, `409`, `422`) are verified
+- [ ] Preserves strict 4-layer Entity–Control–Boundary (ECB) separation (`Routers -> Services -> Repositories -> Models`)
+- [ ] 100% Google-style Python docstrings and TypeScript JSDoc comments added for Sphinx and TypeDoc
+- [ ] Automated `pytest` suite, `ruff` PEP 8 checks, and `npm run typecheck` pass in GitHub Actions CI
+- [ ] No `.env` secrets, credentials, or local `.db` binaries committed

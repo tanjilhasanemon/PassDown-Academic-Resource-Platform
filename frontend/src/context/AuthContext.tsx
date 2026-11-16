@@ -1,12 +1,11 @@
 /**
- * In-Memory Authentication & RBAC Scope Context (SRS §2.7, FR-01 & FR-02).
+ * In-Memory Authentication & Permission Context.
  *
  * Manages the active user profile, role ('guest' | 'student' | 'admin'),
- * fine-grained JWT scopes, and automatic 401 session cleanup without ever
- * writing sensitive tokens to `localStorage`.
+ * fine-grained JWT scopes, and automatic 401 session cleanup without storing
+ * sensitive tokens in `localStorage`.
  *
  * @module context/AuthContext
- * @author Tanjil Hasan Emon (THE - 2331024)
  */
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -41,7 +40,7 @@ export interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
- * Provides reactive authentication and RBAC scope state across the React tree.
+ * Provides reactive authentication and permission state across the React component tree.
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -89,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await fetchCurrentUserProfile();
     } catch {
-      // Interceptor automatically clears state and sets sessionNotice
+      // Interceptor clears state and sets sessionNotice
     }
   };
 
@@ -116,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Custom hook returning the active authentication and RBAC context.
+ * Custom hook returning the active authentication and permission context.
  */
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);

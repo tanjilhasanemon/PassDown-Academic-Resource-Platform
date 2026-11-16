@@ -12,14 +12,14 @@ from app.schemas.auth_schema import UserRead
 from app.schemas.contribution_schema import ContributionRead, ContributionUpdate
 from app.services.contribution_service import ContributionService
 
-router = APIRouter(prefix="/contributions", tags=["Contribution Management (FR-09)"])
+router = APIRouter(prefix="/contributions", tags=["Contribution Management"])
 
 
 @router.get(
     "/mine",
     response_model=list[ContributionRead],
     status_code=status.HTTP_200_OK,
-    summary="List the authenticated user's Contributions (FR-09)",
+    summary="List the authenticated user's Contributions",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The caller lacks contributions:write permission."},
@@ -40,7 +40,7 @@ def list_my_contributions(
     "/{contribution_id}",
     response_model=ContributionRead,
     status_code=status.HTTP_200_OK,
-    summary="Edit an owned pending Contribution (FR-09)",
+    summary="Edit an owned pending Contribution",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The authenticated user does not own this Contribution."},
@@ -70,7 +70,7 @@ def update_own_contribution(
 @router.delete(
     "/{contribution_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Withdraw an owned Contribution or delete one as Admin (FR-09)",
+    summary="Withdraw an owned Contribution or delete one as Admin",
     responses={
         401: {"description": "Authentication is required."},
         403: {"description": "The authenticated user does not own this Contribution."},

@@ -5,6 +5,8 @@ from models.contribution import Contribution
 from models.core_material import CoreMaterial
 from models.course import Course
 from models.request import MaterialRequest, Request
+from models.study_group import StudyGroup, StudyGroupMember, StudyGroupResource
+from models.user_session import UserSession
 
 __all__ = [
     "AppUser",
@@ -14,8 +16,8 @@ __all__ = [
     "Contribution",
     "MaterialRequest",
     "Request",
+    "StudyGroup",
+    "StudyGroupMember",
+    "StudyGroupResource",
+    "UserSession",
 ]
-
-from models.user_session import UserSession
-
-from models.study_group import StudyGroup, StudyGroupMember, StudyGroupResource

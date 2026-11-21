@@ -1,6 +1,7 @@
 """Config — Core Configuration & Security (ECB Control Layer)."""
 import os
 import re
+import tempfile
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -13,7 +14,7 @@ ROOT_DIR = BACKEND_DIR.parent
 def _default_sqlite_url() -> str:
     """Executes `default sqlite url` operation."""
     if os.environ.get("VERCEL") or not os.access(BACKEND_DIR, os.W_OK):
-        return "sqlite:////tmp/passdown.db"
+        return f"sqlite:///{Path(tempfile.gettempdir()) / 'passdown.db'}"
     return f"sqlite:///{BACKEND_DIR / 'passdown.db'}"
 
 

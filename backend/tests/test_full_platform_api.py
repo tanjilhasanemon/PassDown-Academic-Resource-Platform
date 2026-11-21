@@ -154,7 +154,7 @@ def test_normal_contribution_submission_and_request_flow() -> None:
 
     req = client.post(
         f"/api/v1/courses/{course_id}/requests",
-        json={"description": "Need worked DFD examples for SDS"},
+        json={"title": "Need worked DFD examples", "description": "Need worked DFD examples for SDS"},
         headers=student_headers,
     )
     assert req.status_code == 201, req.text

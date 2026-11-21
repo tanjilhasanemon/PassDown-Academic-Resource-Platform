@@ -1,8 +1,8 @@
 """SQLAlchemy 2.0 Database Engine and Session Management (Entity Layer).
 
 Provides the declarative ORM base and FastAPI request-scoped session generator
-with automatic pure-Python PostgreSQL (Supabase via pg8000 + TLS) and SQLite
-connection handling.
+with automatic pure-Python PostgreSQL (Supabase via pg8000 + TLS + QueuePool)
+and SQLite connection handling.
 """
 
 from collections.abc import Generator
@@ -12,6 +12,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import QueuePool
 
 from app.core.config import settings
 
@@ -60,7 +61,6 @@ def _normalize_database_url(raw_url: str) -> tuple[str, dict[str, object]]:
         )
     )
 
-    # Match PostgreSQL sslmode=require TLS encryption for Supabase managed poolers
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE  # nosec B501
@@ -72,7 +72,11 @@ is_sqlite = database_url.startswith("sqlite")
 
 engine_kwargs: dict[str, object] = {"connect_args": connect_args}
 if not is_sqlite:
+    engine_kwargs["poolclass"] = QueuePool
+    engine_kwargs["pool_size"] = 5
+    engine_kwargs["max_overflow"] = 5
     engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 300
 
 engine = create_engine(database_url, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

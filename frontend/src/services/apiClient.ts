@@ -37,6 +37,29 @@ function normalizeApiBaseUrl(raw?: string): string {
 
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
+/** Active in-flight HTTP request counter for TopLoadingBar visibility. */
+let activeNetworkRequests = 0;
+const networkListeners = new Set<(count: number) => void>();
+
+function notifyNetworkListeners(): void {
+  for (const listener of networkListeners) {
+    listener(activeNetworkRequests);
+  }
+}
+
+/**
+ * Subscribes to active in-flight API request count updates.
+ */
+export function subscribeNetworkLoading(
+  listener: (count: number) => void
+): () => void {
+  networkListeners.add(listener);
+  listener(activeNetworkRequests);
+  return () => {
+    networkListeners.delete(listener);
+  };
+}
+
 /** In-memory JWT storage (never persisted in localStorage). */
 let inMemoryAccessToken: string | null = null;
 
@@ -93,10 +116,18 @@ async function request<T>(
     headers.set("Authorization", `Bearer ${inMemoryAccessToken}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  activeNetworkRequests += 1;
+  notifyNetworkListeners();
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
+  } finally {
+    activeNetworkRequests = Math.max(0, activeNetworkRequests - 1);
+    notifyNetworkListeners();
+  }
 
   if (response.status === 401 && !skipInterceptor) {
     inMemoryAccessToken = null;

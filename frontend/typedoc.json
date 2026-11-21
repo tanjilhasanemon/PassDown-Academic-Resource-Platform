@@ -3,6 +3,7 @@
     "src/types/api.ts",
     "src/services/apiClient.ts",
     "src/context/AuthContext.tsx",
+    "src/components/TopLoadingBar.tsx",
     "src/App.tsx"
   ],
   "tsconfig": "./tsconfig.json",

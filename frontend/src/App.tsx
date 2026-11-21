@@ -16,6 +16,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TopLoadingBar } from "./components/TopLoadingBar";
 import { useAuth } from "./context/AuthContext";
 import {
   addCoreMaterial,
@@ -889,6 +890,7 @@ export function App() {
 
   return (
     <div className="min-h-screen w-full flex flex-col">
+      <TopLoadingBar />
       {/* ====================================================================
           TOP NAVIGATION BAR (Full-Screen Fluid Width)
           ==================================================================== */}

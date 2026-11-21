@@ -2,7 +2,7 @@
 
 Provisions initial Admin and Student accounts alongside 8 university courses,
 curated Core Materials, Approved/Pending Contributions, and Open/Fulfilled
-Requests idempotently.
+Requests across all 8 courses idempotently.
 """
 
 from sqlalchemy import select
@@ -66,6 +66,115 @@ DEFAULT_COURSES: list[dict[str, str]] = [
     },
 ]
 
+SEED_CORE_MATERIALS: dict[str, list[dict[str, str]]] = {
+    "CS 101": [
+        {
+            "title": "Introduction to Computing & Problem Solving Slides",
+            "type": "slides",
+            "url": "https://cs50.harvard.edu/x/",
+            "description": "Foundational lectures on binary representation, control flow, and algorithmic thinking.",
+        },
+        {
+            "title": "C & Python Syntax Quick Reference Sheet",
+            "type": "notes",
+            "url": "https://docs.python.org/3/tutorial/",
+            "description": "Concise syntax notes for loops, functions, arrays, and debugging.",
+        },
+    ],
+    "CSE 203": [
+        {
+            "title": "Linked Lists, Stacks, Queues & Binary Trees Lecture Deck",
+            "type": "slides",
+            "url": "https://visualgo.net/en",
+            "description": "Visual walkthroughs of pointer manipulation, tree traversals, and hash tables.",
+        },
+        {
+            "title": "CSE 203 Midterm Past Question Paper Bundle",
+            "type": "past_paper",
+            "url": "https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki",
+            "description": "Worked past exam problems on complexity analysis and recursion.",
+        },
+    ],
+    "CSE 211": [
+        {
+            "title": "CLRS Divide-and-Conquer, Greedy & Dynamic Programming Notes",
+            "type": "notes",
+            "url": "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/",
+            "description": "Complete recurrence relations, Master Theorem proofs, and DP state transitions.",
+        },
+        {
+            "title": "Graph Algorithms (BFS, DFS, Dijkstra, MST) Reference Book",
+            "type": "book",
+            "url": "https://cp-algorithms.com/",
+            "description": "Step-by-step shortest-path and minimum spanning tree implementations.",
+        },
+    ],
+    "CSE 303": [
+        {
+            "title": "ER Modeling, Normalization (1NF–BCNF) & SQL Joins Notes",
+            "type": "notes",
+            "url": "https://www.postgresql.org/docs/current/tutorial.html",
+            "description": "Comprehensive relational schema normalization and SQL query optimization guide.",
+        },
+        {
+            "title": "SQLAlchemy 2.0 ORM & PostgreSQL Indexing Reference",
+            "type": "book",
+            "url": "https://docs.sqlalchemy.org/en/20/",
+            "description": "Core reading on relational schema design, foreign keys, and B-Tree indexing.",
+        },
+    ],
+    "CSE 309": [
+        {
+            "title": "FastAPI + React Full-Stack Architecture Slides (Weeks 1–6)",
+            "type": "slides",
+            "url": "https://fastapi.tiangolo.com/tutorial/",
+            "description": "Official lecture slides covering REST APIs, Pydantic v2 validation, and React TypeScript.",
+        },
+        {
+            "title": "HTTP Status Codes & RESTful API Design Reference Note",
+            "type": "notes",
+            "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status",
+            "description": "Complete guide to 200, 201, 204, 401, 403, 404, 409, and 422 status codes.",
+        },
+    ],
+    "CSE 451": [
+        {
+            "title": "Lecture 01 — Software Engineering & IEEE 830 Requirements",
+            "type": "slides",
+            "url": "https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/SRS---Software-Requirements-Specification",
+            "description": "Official lecture slides covering software engineering fundamentals and requirements specification.",
+        },
+        {
+            "title": "Lecture 02 — Entity-Control-Boundary Architecture & UML Modeling",
+            "type": "notes",
+            "url": "https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/SDS---Software-Design-Specification",
+            "description": "Comprehensive design specification guide covering layered architecture, DFDs, and state machines.",
+        },
+        {
+            "title": "Midterm & Final Examination Past Question Archive",
+            "type": "past_paper",
+            "url": "https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki",
+            "description": "Curated archive of past examination questions and evaluation rubrics.",
+        },
+    ],
+    "EEE 131": [
+        {
+            "title": "Ohm's Law, Kirchhoff's Laws & Nodal/Mesh Analysis Slides",
+            "type": "slides",
+            "url": "https://ocw.mit.edu/courses/6-002-circuits-and-electronics-spring-2007/",
+            "description": "Introductory DC/AC circuit theorems, Thevenin/Norton equivalents, and op-amps.",
+        },
+    ],
+    "MAT 104": [
+        {
+            "title": "Matrices, Eigenvalues & First-Order ODEs Formula Book",
+            "type": "book",
+            "url": "https://openstax.org/details/books/calculus-volume-1",
+            "description": "OpenStax reference textbook with worked linear algebra and differential equation examples.",
+        },
+    ],
+}
+
 
 def seed_initial_data(db: Session) -> dict[str, int]:
     """Idempotently seeds default Admin/Student users, 8 courses, and sample resources.
@@ -101,19 +210,21 @@ def seed_initial_data(db: Session) -> dict[str, int]:
         )
         users_created += 1
 
+    courses_by_code = {}
     for course_data in DEFAULT_COURSES:
-        if not CourseRepository.get_by_code(db, course_data["code"]):
-            CourseRepository.create(db, **course_data)
+        course = CourseRepository.get_by_code(db, course_data["code"])
+        if not course:
+            course = CourseRepository.create(db, **course_data)
             courses_created += 1
+        courses_by_code[course.code] = course
 
-    cse451 = CourseRepository.get_by_code(db, "CSE 451")
-    cse309 = CourseRepository.get_by_code(db, "CSE 309")
-    cse303 = CourseRepository.get_by_code(db, "CSE 303")
-
-    if cse451 and student:
+    for code, materials in SEED_CORE_MATERIALS.items():
+        course = courses_by_code.get(code)
+        if not course:
+            continue
         existing_core = (
             db.execute(
-                select(CoreMaterial).where(CoreMaterial.course_id == cse451.id)
+                select(CoreMaterial).where(CoreMaterial.course_id == course.id)
             )
             .scalars()
             .first()
@@ -122,30 +233,21 @@ def seed_initial_data(db: Session) -> dict[str, int]:
             db.add_all(
                 [
                     CoreMaterial(
-                        course_id=cse451.id,
-                        title="Lecture 01 — Software Engineering & IEEE 830 Requirements",
-                        type="slides",
-                        url="https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/SRS---Software-Requirements-Specification",
-                        description="Official lecture slides covering software engineering fundamentals and requirements specification.",
-                    ),
-                    CoreMaterial(
-                        course_id=cse451.id,
-                        title="Lecture 02 — Entity-Control-Boundary Architecture & UML Modeling",
-                        type="notes",
-                        url="https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/SDS---Software-Design-Specification",
-                        description="Comprehensive design specification guide covering layered architecture, DFDs, and state machines.",
-                    ),
-                    CoreMaterial(
-                        course_id=cse451.id,
-                        title="Midterm & Final Examination Past Question Archive",
-                        type="past_paper",
-                        url="https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki",
-                        description="Curated archive of past examination questions and evaluation rubrics.",
-                    ),
+                        course_id=course.id,
+                        title=mat["title"],
+                        type=mat["type"],
+                        url=mat["url"],
+                        description=mat["description"],
+                    )
+                    for mat in materials
                 ]
             )
             db.commit()
 
+    cse451 = courses_by_code.get("CSE 451")
+    cse309 = courses_by_code.get("CSE 309")
+
+    if cse451 and student:
         existing_contrib = (
             db.execute(
                 select(Contribution).where(Contribution.course_id == cse451.id)
@@ -203,51 +305,35 @@ def seed_initial_data(db: Session) -> dict[str, int]:
             db.commit()
 
     if cse309 and student:
-        existing_cse309 = (
+        existing_309_contrib = (
             db.execute(
-                select(CoreMaterial).where(CoreMaterial.course_id == cse309.id)
+                select(Contribution).where(Contribution.course_id == cse309.id)
             )
             .scalars()
             .first()
         )
-        if not existing_cse309:
+        if not existing_309_contrib:
             db.add_all(
                 [
-                    CoreMaterial(
+                    Contribution(
                         course_id=cse309.id,
-                        title="React + TypeScript + FastAPI Full-Stack Architecture Notes",
+                        submitted_by=student.id,
+                        title="Complete React TypeScript + Fetch Interceptor Cheat Sheet",
                         type="notes",
                         url="https://react.dev/learn/typescript",
-                        description="Reference guide for building type-safe SPA clients backed by REST APIs.",
+                        description="Summary of React hooks, typed props, and in-memory JWT interceptors.",
+                        status="approved",
                     ),
-                    CoreMaterial(
+                    Contribution(
                         course_id=cse309.id,
-                        title="HTTP, OAuth2 Bearer JWT & REST API Design Slides",
-                        type="slides",
-                        url="https://fastapi.tiangolo.com/tutorial/security/",
-                        description="Lecture deck on stateless JWT authentication and role-based scopes.",
+                        submitted_by=student.id,
+                        title="SQLAlchemy 2.0 Mapped Columns & Relationships Guide",
+                        type="notes",
+                        url="https://docs.sqlalchemy.org/en/20/orm/quickstart.html",
+                        description="Examples of relational constraints and query optimization (pending review).",
+                        status="pending",
                     ),
                 ]
-            )
-            db.commit()
-
-    if cse303 and student:
-        existing_cse303 = (
-            db.execute(
-                select(CoreMaterial).where(CoreMaterial.course_id == cse303.id)
-            )
-            .scalars()
-            .first()
-        )
-        if not existing_cse303:
-            db.add(
-                CoreMaterial(
-                    course_id=cse303.id,
-                    title="SQLAlchemy 2.0 ORM & Relational Schema Design Reference",
-                    type="book",
-                    url="https://docs.sqlalchemy.org/en/20/",
-                    description="Core reading on relational schema design, foreign keys, and B-Tree indexing.",
-                )
             )
             db.commit()
 

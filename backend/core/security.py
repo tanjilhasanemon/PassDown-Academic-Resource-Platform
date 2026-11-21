@@ -1,5 +1,6 @@
 """Security — Core Configuration & Security (ECB Control Layer)."""
 import hashlib
+import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -70,7 +71,7 @@ def generate_refresh_token() -> str:
 
 def hash_refresh_token(raw_token: str) -> str:
     """Store only the SHA-256 digest of refresh tokens in the database."""
-    return hashlib.sha256(f"{raw_token}{settings.password_pepper}".encode("utf-8")).hexdigest()
+    return hmac.new(settings.jwt_secret.encode("utf-8"), raw_token.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def create_access_token(

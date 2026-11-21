@@ -30,7 +30,7 @@ class Settings:
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
     CORS_ORIGINS: list[str] = [
-        origin.strip()
+        origin.strip().rstrip("/")
         for origin in os.getenv(
             "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
         ).split(",")

@@ -1,7 +1,7 @@
 """SQLAlchemy 2.0 Database Engine and Session Management (Entity Layer).
 
 Provides the declarative ORM base and FastAPI request-scoped session generator
-with automatic PostgreSQL (Supabase) and SQLite connection handling.
+with automatic PostgreSQL (Supabase SSL) and SQLite connection handling.
 """
 
 from collections.abc import Generator
@@ -20,9 +20,13 @@ def _normalize_database_url(raw_url: str) -> str:
     Returns:
         str: Normalized SQLAlchemy database URL.
     """
-    if raw_url.startswith("postgres://"):
-        return raw_url.replace("postgres://", "postgresql://", 1)
-    return raw_url
+    cleaned = raw_url.strip()
+    if cleaned.startswith("postgres://"):
+        cleaned = cleaned.replace("postgres://", "postgresql://", 1)
+    if cleaned.startswith("postgresql://") and "sslmode=" not in cleaned:
+        separator = "&" if "?" in cleaned else "?"
+        cleaned = f"{cleaned}{separator}sslmode=require"
+    return cleaned
 
 
 database_url = _normalize_database_url(settings.DATABASE_URL)

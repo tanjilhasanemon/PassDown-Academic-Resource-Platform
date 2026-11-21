@@ -1,7 +1,7 @@
 """SQLAlchemy 2.0 Database Engine and Session Management (Entity Layer).
 
 Provides the declarative ORM base and FastAPI request-scoped session generator
-in compliance with PassDown SRS §2.1 and §3.3.3.
+with automatic PostgreSQL (Supabase) and SQLite connection handling.
 """
 
 from collections.abc import Generator
@@ -10,13 +10,30 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
 
-connect_args = (
-    {"check_same_thread": False}
-    if settings.DATABASE_URL.startswith("sqlite")
-    else {}
-)
 
-engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
+def _normalize_database_url(raw_url: str) -> str:
+    """Normalizes PostgreSQL connection strings for SQLAlchemy 2.0 + psycopg2.
+
+    Args:
+        raw_url (str): Raw DATABASE_URL from environment variables.
+
+    Returns:
+        str: Normalized SQLAlchemy database URL.
+    """
+    if raw_url.startswith("postgres://"):
+        return raw_url.replace("postgres://", "postgresql://", 1)
+    return raw_url
+
+
+database_url = _normalize_database_url(settings.DATABASE_URL)
+is_sqlite = database_url.startswith("sqlite")
+
+connect_args = {"check_same_thread": False} if is_sqlite else {}
+engine_kwargs = {"connect_args": connect_args}
+if not is_sqlite:
+    engine_kwargs["pool_pre_ping"] = True
+
+engine = create_engine(database_url, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

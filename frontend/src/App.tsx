@@ -70,6 +70,7 @@ type SortOrder = "code_asc" | "title_asc" | "newest";
 type LevelFilter = "ALL" | "100" | "200" | "300" | "400";
 
 const PAGE_SIZE = 6;
+const API_DOCS_URL = `${(import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1").replace(/\/api\/v1\/?$/, "")}/docs`;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const FALLBACK_COURSES: CourseSummary[] = [
@@ -990,7 +991,7 @@ export function App() {
             </span>
 
             <a
-              href="http://127.0.0.1:8000/docs"
+              href={API_DOCS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="pd-btn pd-btn-outline hidden md:inline-flex"
@@ -3325,7 +3326,7 @@ export function App() {
             </button>
             <span>·</span>
             <a
-              href="http://127.0.0.1:8000/docs"
+              href={API_DOCS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="hover:underline"

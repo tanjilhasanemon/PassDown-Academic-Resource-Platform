@@ -29,7 +29,7 @@ jobs:
 
       - name: Run PEP 8 & Bugbear Code Review with Ruff
         run: |
-          python -m ruff check --select E9,F,B .
+          python -m ruff check .
 
       - name: Run Security Static Analysis with Bandit
         run: |

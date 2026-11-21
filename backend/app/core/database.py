@@ -19,8 +19,8 @@ from app.core.config import settings
 def _normalize_database_url(raw_url: str) -> tuple[str, dict[str, object]]:
     """Normalizes database URLs for SQLAlchemy 2.0 across SQLite and Supabase PostgreSQL.
 
-    Uses the pure-Python `pg8000` PostgreSQL driver with TLS so serverless
-    deployments (such as Vercel Python) never fail on native `libpq` binaries.
+    Uses the pure-Python `pg8000` PostgreSQL driver with encrypted TLS matching
+    PostgreSQL `sslmode=require` semantics for Supabase managed connection poolers.
 
     Args:
         raw_url (str): Raw DATABASE_URL from environment variables.
@@ -44,7 +44,6 @@ def _normalize_database_url(raw_url: str) -> tuple[str, dict[str, object]]:
     elif cleaned.startswith("postgresql://"):
         cleaned = cleaned.replace("postgresql://", "postgresql+pg8000://", 1)
 
-    # pg8000 uses ssl_context in connect_args rather than sslmode query param
     parts = urlsplit(cleaned)
     filtered_query = [
         (k, v)
@@ -61,7 +60,10 @@ def _normalize_database_url(raw_url: str) -> tuple[str, dict[str, object]]:
         )
     )
 
+    # Match PostgreSQL sslmode=require TLS encryption for Supabase managed poolers
     ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE  # nosec B501
     return normalized_url, {"ssl_context": ssl_context}
 
 

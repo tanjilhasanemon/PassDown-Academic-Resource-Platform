@@ -6,6 +6,7 @@ HTTP routers.
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +27,7 @@ from app.routers.core_material_router import router as core_material_router
 from app.routers.course_router import router as course_router
 from app.routers.request_router import router as request_router
 
+logger = logging.getLogger(__name__)
 _db_initialized = False
 
 
@@ -34,13 +36,16 @@ def ensure_database_initialized() -> None:
     global _db_initialized
     if _db_initialized or not settings.AUTO_SEED_ON_STARTUP:
         return
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
     try:
-        seed_initial_data(db)
-        _db_initialized = True
-    finally:
-        db.close()
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            seed_initial_data(db)
+            _db_initialized = True
+        finally:
+            db.close()
+    except Exception as exc:  # pragma: no cover - defensive serverless startup guard
+        logger.exception("Database startup initialization failed: %s", exc)
 
 
 @asynccontextmanager

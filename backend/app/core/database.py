@@ -1,47 +1,73 @@
 """SQLAlchemy 2.0 Database Engine and Session Management (Entity Layer).
 
 Provides the declarative ORM base and FastAPI request-scoped session generator
-with automatic PostgreSQL (Supabase SSL) and SQLite connection handling.
+with automatic pure-Python PostgreSQL (Supabase via pg8000 + TLS) and SQLite
+connection handling.
 """
 
 from collections.abc import Generator
 import os
+import ssl
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
 
 
-def _normalize_database_url(raw_url: str) -> str:
-    """Normalizes PostgreSQL connection strings for SQLAlchemy 2.0 + psycopg2.
+def _normalize_database_url(raw_url: str) -> tuple[str, dict[str, object]]:
+    """Normalizes database URLs for SQLAlchemy 2.0 across SQLite and Supabase PostgreSQL.
 
-    Falls back to writable `/tmp/passdown_dev.db` on Vercel serverless if no
-    external PostgreSQL DATABASE_URL is configured.
+    Uses the pure-Python `pg8000` PostgreSQL driver with TLS so serverless
+    deployments (such as Vercel Python) never fail on native `libpq` binaries.
 
     Args:
         raw_url (str): Raw DATABASE_URL from environment variables.
 
     Returns:
-        str: Normalized SQLAlchemy database URL.
+        tuple[str, dict[str, object]]: Normalized SQLAlchemy URL and connect_args.
     """
     cleaned = raw_url.strip()
-    if (
-        os.getenv("VERCEL")
-        and cleaned == "sqlite:///./passdown_dev.db"
-    ):
-        return "sqlite:////tmp/passdown_dev.db"
+    if os.getenv("VERCEL") and cleaned == "sqlite:///./passdown_dev.db":
+        cleaned = "sqlite:////tmp/passdown_dev.db"
+
+    if cleaned.startswith("sqlite"):
+        return cleaned, {"check_same_thread": False}
+
     if cleaned.startswith("postgres://"):
-        cleaned = cleaned.replace("postgres://", "postgresql://", 1)
-    if cleaned.startswith("postgresql://") and "sslmode=" not in cleaned:
-        separator = "&" if "?" in cleaned else "?"
-        cleaned = f"{cleaned}{separator}sslmode=require"
-    return cleaned
+        cleaned = cleaned.replace("postgres://", "postgresql+pg8000://", 1)
+    elif cleaned.startswith("postgresql+psycopg2://"):
+        cleaned = cleaned.replace(
+            "postgresql+psycopg2://", "postgresql+pg8000://", 1
+        )
+    elif cleaned.startswith("postgresql://"):
+        cleaned = cleaned.replace("postgresql://", "postgresql+pg8000://", 1)
+
+    # pg8000 uses ssl_context in connect_args rather than sslmode query param
+    parts = urlsplit(cleaned)
+    filtered_query = [
+        (k, v)
+        for k, v in parse_qsl(parts.query, keep_blank_values=True)
+        if k.lower() not in {"sslmode", "pgbouncer"}
+    ]
+    normalized_url = urlunsplit(
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            urlencode(filtered_query),
+            parts.fragment,
+        )
+    )
+
+    ssl_context = ssl.create_default_context()
+    return normalized_url, {"ssl_context": ssl_context}
 
 
-database_url = _normalize_database_url(settings.DATABASE_URL)
+database_url, connect_args = _normalize_database_url(settings.DATABASE_URL)
 is_sqlite = database_url.startswith("sqlite")
 
-connect_args = {"check_same_thread": False} if is_sqlite else {}
 engine_kwargs: dict[str, object] = {"connect_args": connect_args}
 if not is_sqlite:
     engine_kwargs["pool_pre_ping"] = True

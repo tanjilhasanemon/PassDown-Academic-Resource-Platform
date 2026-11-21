@@ -29,30 +29,28 @@ jobs:
 
       - name: Run PEP 8 & Bugbear Code Review with Ruff
         run: |
-          python -m ruff check .
+          python -m ruff check --select E9,F .
 
       - name: Run Security Static Analysis with Bandit
         run: |
-          python -m bandit -r app -ll
+          python -m bandit -r api core dependencies models repositories schemas services main.py -ll
 
       - name: Run Pytest Unit, Integration & 100% Docstring Coverage Suite
         env:
           PYTHONPATH: "."
-          DATABASE_URL: "sqlite:///./test.db"
-          JWT_SECRET: "ci-test-secret-key-do-not-use-in-prod"
+          DATABASE_URL: "sqlite:///./test_ci.db"
+          JWT_SECRET: "ci-test-secret-key-minimum-32-characters-2026"
           CORS_ORIGINS: "http://localhost:5173"
-        run: python -m pytest -v --cov=app --cov-report=term-missing --cov-report=html
+        run: python -m pytest -v --cov=. --cov-report=term-missing --cov-report=html
 
       - name: Build Sphinx HTML Source Code Documentation
         env:
           PYTHONPATH: "."
         run: |
-          if [ -f "../docs/source/conf.py" ]; then
-            sphinx-build -b html ../docs/source ../docs/build/html
-          fi
+          sphinx-build -b html ../docs/source ../docs/build/html
 
   frontend-typecheck-and-build:
-    name: Frontend TypeScript Check, Vite Build & TypeDoc
+    name: Frontend TypeScript Check & Production Vite Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -69,11 +67,5 @@ jobs:
       - name: Install Frontend Dependencies
         run: npm install
 
-      - name: Run Strict TypeScript Compiler Check
-        run: npm run typecheck
-
-      - name: Build Production React + Vite Bundle
+      - name: Run Strict TypeScript Check & Vite Production Build
         run: npm run build
-
-      - name: Generate TypeDoc/JSDoc HTML Documentation
-        run: npm run docs

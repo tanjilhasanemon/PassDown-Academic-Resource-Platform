@@ -1,68 +1,72 @@
-Boundary Layer (`app.routers` & `app.schemas`)
-==============================================
+Boundary Layer (`api.v1` & `schemas`)
+=====================================
 
 FastAPI HTTP Routers
 --------------------
 
-.. automodule:: app.routers.auth_router
+.. automodule:: api.v1.auth
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.routers.course_router
+.. automodule:: api.v1.me
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.routers.core_material_router
+.. automodule:: api.v1.courses
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.routers.contribution_router
+.. automodule:: api.v1.core_materials
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.routers.contribution_moderation_router
+.. automodule:: api.v1.contributions
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.routers.contribution_management_router
+.. automodule:: api.v1.requests
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.routers.request_router
+.. automodule:: api.v1.groups
    :members:
    :undoc-members:
-   :show-inheritance:
+
+.. automodule:: api.v1.admin
+   :members:
+   :undoc-members:
+
+.. automodule:: api.v1.admin_ops
+   :members:
+   :undoc-members:
 
 Pydantic Request & Response Schemas
 -----------------------------------
 
-.. automodule:: app.schemas.auth_schema
+.. automodule:: schemas.auth
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.schemas.course_schema
+.. automodule:: schemas.user
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.schemas.core_material_schema
+.. automodule:: schemas.course
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.schemas.contribution_schema
+.. automodule:: schemas.core_material
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.schemas.request_schema
+.. automodule:: schemas.contribution
    :members:
    :undoc-members:
-   :show-inheritance:
+
+.. automodule:: schemas.request
+   :members:
+   :undoc-members:
+
+.. automodule:: schemas.group
+   :members:
+   :undoc-members:

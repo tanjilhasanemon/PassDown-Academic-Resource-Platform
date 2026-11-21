@@ -1,58 +1,68 @@
-Entity Layer (`app.models` & `app.repositories`)
-================================================
+Entity Layer (`models` & `repositories`)
+========================================
 
 ORM Entities
 ------------
 
-.. automodule:: app.models.user
+.. automodule:: models.app_user
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.models.course
+.. automodule:: models.course
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.models.core_material
+.. automodule:: models.core_material
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.models.contribution
+.. automodule:: models.contribution
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.models.request
+.. automodule:: models.request
    :members:
    :undoc-members:
-   :show-inheritance:
+
+.. automodule:: models.study_group
+   :members:
+   :undoc-members:
+
+.. automodule:: models.user_session
+   :members:
+   :undoc-members:
+
+.. automodule:: models.audit_log
+   :members:
+   :undoc-members:
 
 Data-Access Repositories
 ------------------------
 
-.. automodule:: app.repositories.user_repo
+.. automodule:: repositories.user
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.repositories.course_repo
+.. automodule:: repositories.course
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.repositories.core_material_repo
+.. automodule:: repositories.core_material
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.repositories.contribution_repo
+.. automodule:: repositories.contribution
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.repositories.request_repo
+.. automodule:: repositories.request
    :members:
    :undoc-members:
-   :show-inheritance:
+
+.. automodule:: repositories.audit
+   :members:
+   :undoc-members:
+
+.. automodule:: repositories.stats
+   :members:
+   :undoc-members:

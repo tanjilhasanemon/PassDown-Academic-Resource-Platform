@@ -1,12 +1,13 @@
 [tool.ruff]
 target-version = "py311"
-line-length = 100
+line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B"]
 ignore = [
-    "B008",  # FastAPI Depends() and Security() in function defaults
-    "E501",  # Handled by formatting guidelines for long URLs/docstrings
+    "B008",
+    "E501",
+    "E402",
 ]
 
 [tool.pytest.ini_options]

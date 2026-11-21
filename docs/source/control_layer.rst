@@ -1,43 +1,52 @@
-Control Layer (`app.services` & `app.core`)
-===========================================
+Control Layer (`services` & `core`)
+===================================
 
 Business Logic Services
 -----------------------
 
-.. automodule:: app.services.auth_service
+.. automodule:: services.auth
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.services.course_service
+.. automodule:: services.user
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.services.core_material_service
+.. automodule:: services.course
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.services.contribution_service
+.. automodule:: services.core_material
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.services.request_service
+.. automodule:: services.contribution
    :members:
    :undoc-members:
-   :show-inheritance:
 
-Security, Configuration & Database Seeding
-------------------------------------------
-
-.. automodule:: app.core.security
+.. automodule:: services.request
    :members:
    :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.core.seed
+.. automodule:: services.session
    :members:
    :undoc-members:
-   :show-inheritance:
+
+.. automodule:: services.stats
+   :members:
+   :undoc-members:
+
+Core Security, RBAC & Configuration
+-----------------------------------
+
+.. automodule:: core.security
+   :members:
+   :undoc-members:
+
+.. automodule:: core.rbac
+   :members:
+   :undoc-members:
+
+.. automodule:: core.config
+   :members:
+   :undoc-members:

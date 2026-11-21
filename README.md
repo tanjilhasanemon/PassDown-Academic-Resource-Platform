@@ -1,6 +1,8 @@
 # PassDown — Academic Course Archive & Resource-Sharing Platform
 
 > *"Browse university courses, share peer-verified study materials, and fulfill academic resource requests."*
+
+**Live Reference Design:** [https://passdown-weld.vercel.app/](https://passdown-weld.vercel.app/)  
 **Main Repository:** [https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform)
 
 ## 1. Overview & Key Capabilities

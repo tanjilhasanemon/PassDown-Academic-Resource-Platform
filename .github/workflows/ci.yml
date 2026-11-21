@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend-lint-test-and-docs:
-    name: Backend Lint (Ruff), Unit Tests (Pytest) & Sphinx Docs
+    name: Backend Code Review (Ruff & Bandit), Unit Tests (Pytest) & Sphinx Docs
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,10 +27,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run PEP 8 Coding Standard check with Ruff
+      - name: Run PEP 8 & Bugbear Code Review with Ruff
         run: |
-          python -m ruff check --fix . || true
-          python -m ruff check --select E9,F .
+          python -m ruff check --select E9,F,B .
+
+      - name: Run Security Static Analysis with Bandit
+        run: |
+          python -m bandit -r app -ll
 
       - name: Run Pytest Unit, Integration & 100% Docstring Coverage Suite
         env:
@@ -38,7 +41,7 @@ jobs:
           DATABASE_URL: "sqlite:///./test.db"
           JWT_SECRET: "ci-test-secret-key-do-not-use-in-prod"
           CORS_ORIGINS: "http://localhost:5173"
-        run: python -m pytest --cov=app --cov-report=term-missing
+        run: python -m pytest -v --cov=app --cov-report=term-missing --cov-report=html
 
       - name: Build Sphinx HTML Source Code Documentation
         env:

@@ -42,10 +42,10 @@ class CoreMaterialRepository:
             list[CoreMaterial]: Matching materials, newest first.
         """
         stmt = select(CoreMaterial).where(CoreMaterial.course_id == course_id)
-        
+
         if material_type and material_type != "all":
             stmt = stmt.where(CoreMaterial.type == material_type)
-            
+
         stmt = stmt.order_by(CoreMaterial.created_at.desc(), CoreMaterial.id.desc())
         return list(db.execute(stmt).scalars().all())
 

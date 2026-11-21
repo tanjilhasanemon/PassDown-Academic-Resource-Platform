@@ -29,6 +29,26 @@ def _auth_header(email: str, password: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {res.json()['access_token']}"}
 
 
+def _ensure_seed_course() -> int:
+    """Ensures at least one course exists in a fresh CI database and returns its ID."""
+    existing = client.get("/api/v1/courses").json()["items"]
+    if existing:
+        return existing[0]["id"]
+    admin_headers = _auth_header("admin@passdown.edu", "Admin1234")
+    created = client.post(
+        "/api/v1/courses",
+        json={
+            "code": "CSE451",
+            "title": "Software Engineering",
+            "department": "CSE",
+            "semester_offered": "Autumn 2026",
+        },
+        headers=admin_headers,
+    )
+    assert created.status_code == 201, created.text
+    return created.json()["id"]
+
+
 def test_normal_health_endpoint_returns_ok() -> None:
     """Verifies GET /api/health returns 200 OK."""
     res = client.get("/api/health")
@@ -46,6 +66,7 @@ def test_normal_password_hashing_and_verification() -> None:
 
 def test_normal_public_course_catalog_and_search() -> None:
     """Verifies Guests can browse and search courses without logging in."""
+    _ensure_seed_course()
     res = client.get("/api/v1/courses")
     assert res.status_code == 200
     data = res.json()
@@ -127,8 +148,7 @@ def test_normal_contribution_submission_and_request_flow() -> None:
     """Verifies Student can submit a pending contribution and post a course request."""
     student_headers = _auth_header("student@passdown.edu", "Student1234")
     admin_headers = _auth_header("admin@passdown.edu", "Admin1234")
-    courses = client.get("/api/v1/courses").json()["items"]
-    course_id = courses[0]["id"]
+    course_id = _ensure_seed_course()
 
     contrib = client.post(
         f"/api/v1/courses/{course_id}/contributions",
@@ -188,8 +208,7 @@ def test_invalid_registration_payloads_rejected(bad_payload: dict[str, str]) -> 
 def test_invalid_non_https_material_url_rejected() -> None:
     """Verifies non-HTTPS or malformed URLs are rejected when adding materials."""
     admin_headers = _auth_header("admin@passdown.edu", "Admin1234")
-    courses = client.get("/api/v1/courses").json()["items"]
-    course_id = courses[0]["id"]
+    course_id = _ensure_seed_course()
 
     res = client.post(
         f"/api/v1/courses/{course_id}/core-materials",

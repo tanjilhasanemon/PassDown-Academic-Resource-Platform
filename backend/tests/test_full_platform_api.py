@@ -74,7 +74,7 @@ def test_normal_public_course_catalog_and_search() -> None:
     assert len(data["items"]) >= 1
 
     first_code = data["items"][0]["code"]
-    search_res = client.get(f"/api/v1/courses?search={first_code}")
+    search_res = client.get(f"/api/v1/courses?q={first_code}")
     assert search_res.status_code == 200
     assert any(c["code"] == first_code for c in search_res.json()["items"])
 
@@ -186,7 +186,7 @@ def test_normal_contribution_submission_and_request_flow() -> None:
 
 def test_boundary_empty_search_returns_empty_list() -> None:
     """Verifies searching for a nonexistent course returns 200 with empty items list."""
-    res = client.get("/api/v1/courses?search=NONEXISTENT_COURSE_99999")
+    res = client.get("/api/v1/courses?q=NONEXISTENT_COURSE_99999")
     assert res.status_code == 200
     assert res.json()["items"] == []
 

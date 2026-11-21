@@ -1,0 +1,14 @@
+[project]
+name = "passdown"
+version = "0.2.0"
+description = "PassDown course-material sharing platform"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "sqlalchemy>=2.0.36",
+    "pydantic-settings>=2.6.0",
+    "psycopg[binary]>=3.2.0",
+    "pyjwt>=2.9.0",
+    "argon2-cffi>=23.1.0",
+    "alembic>=1.14.0",
+]

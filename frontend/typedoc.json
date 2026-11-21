@@ -1,0 +1,11 @@
+{
+  "entryPoints": [
+    "src/types/index.ts",
+    "src/api/client.ts",
+    "src/auth/AuthContext.tsx",
+    "src/App.tsx"
+  ],
+  "tsconfig": "./tsconfig.json",
+  "out": "../docs/frontend-docs",
+  "name": "PassDown Frontend (React + TypeScript)"
+}

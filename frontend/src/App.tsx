@@ -70,7 +70,11 @@ type SortOrder = "code_asc" | "title_asc" | "newest";
 type LevelFilter = "ALL" | "100" | "200" | "300" | "400";
 
 const PAGE_SIZE = 6;
-const API_DOCS_URL = `${(import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1").replace(/\/api\/v1\/?$/, "")}/docs`;
+const API_DOCS_URL = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL.trim().replace(/\/+$/, "").replace(/\/api\/v1$/, "")}/docs`
+  : import.meta.env.DEV
+  ? "http://127.0.0.1:8000/docs"
+  : "/docs";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const FALLBACK_COURSES: CourseSummary[] = [

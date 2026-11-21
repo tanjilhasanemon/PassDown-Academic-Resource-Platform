@@ -28,8 +28,11 @@ import type {
 } from "../types/api";
 
 function normalizeApiBaseUrl(raw?: string): string {
-  const cleaned = (raw || "http://127.0.0.1:8000/api/v1").trim().replace(/\/+$/, "");
-  return cleaned.endsWith("/api/v1") ? cleaned : `${cleaned}/api/v1`;
+  if (raw && raw.trim().length > 0) {
+    const cleaned = raw.trim().replace(/\/+$/, "");
+    return cleaned.endsWith("/api/v1") ? cleaned : `${cleaned}/api/v1`;
+  }
+  return import.meta.env.DEV ? "http://127.0.0.1:8000/api/v1" : "/api/v1";
 }
 
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);

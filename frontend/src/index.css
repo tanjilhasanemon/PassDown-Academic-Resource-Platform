@@ -1276,3 +1276,92 @@ code,
   color: var(--text-secondary);
   line-height: 1.5;
 }
+
+
+/* ── Subtask 2 Visible UI Polish (Orientation Strip, Filter Chips & Card Accent) ── */
+.orientation-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1.15rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-left: 3px solid var(--accent, #0f5338);
+}
+
+.orientation-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 0.81rem;
+  color: var(--text-secondary);
+}
+
+.orientation-pill strong {
+  color: var(--text-primary, var(--text));
+}
+
+.orientation-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.active-filters-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+}
+
+.active-filters-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.58rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent, #0f5338);
+  background: transparent;
+  color: var(--text-primary, var(--text));
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  background: var(--accent, #0f5338);
+  color: #ffffff;
+}
+
+.filter-chip-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.filter-chip-clear:hover {
+  color: var(--accent, #0f5338);
+}

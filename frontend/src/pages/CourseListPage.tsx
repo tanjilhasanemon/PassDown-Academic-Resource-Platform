@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
+  BookOpen,
   Building2,
   Calendar,
   ChevronDown,
@@ -12,6 +13,8 @@ import {
   LogIn,
   RotateCcw,
   Search,
+  ShieldCheck,
+  Users,
   X,
 } from "lucide-react";
 import { coursesApi } from "../api/courses";
@@ -211,7 +214,7 @@ export function CourseListPage() {
       <section className="editorial-masthead">
         <div>
           <div className="masthead-kicker">
-            IUB Academic Resource Directory · v0.2.0
+            IUB Academic Resource Directory · CSE 451 v1.0
           </div>
           <h1 className="masthead-title">
             Course Material Archive &amp; Peer Repository
@@ -259,6 +262,70 @@ export function CourseListPage() {
           ) : null}
         </div>
       </section>
+
+      {/* Quick Orientation Strip (Nielsen H6, H7 & H10) */}
+      <div className="orientation-strip" aria-label="Platform highlights">
+        <div className="orientation-pill">
+          <BookOpen size={14} />
+          <span><strong>Core Materials</strong> — Admin-verified slides &amp; books</span>
+        </div>
+        <div className="orientation-pill">
+          <ShieldCheck size={14} />
+          <span><strong>Moderated Notes</strong> — Peer links reviewed before publishing</span>
+        </div>
+        <div className="orientation-pill">
+          <Users size={14} />
+          <span><strong>Study Groups</strong> — Shared boards with granular permissions</span>
+        </div>
+        <div className="orientation-hint">
+          Press <kbd className="kbd-key">/</kbd> to search · <kbd className="kbd-key">?</kbd> for Help
+        </div>
+      </div>
+
+      {/* Active Filter Chips (Nielsen H1 & H3) */}
+      {(searchQuery.trim() !== "" || selectedDept !== "ALL" || selectedLevel !== "ALL") && (
+        <div className="active-filters-bar" role="region" aria-label="Active filters">
+          <span className="active-filters-label">Active filters:</span>
+          {searchQuery.trim() !== "" && (
+            <button
+              type="button"
+              className="filter-chip"
+              onClick={() => setSearchQuery("")}
+            >
+              Search: &ldquo;{searchQuery.trim()}&rdquo; <X size={12} />
+            </button>
+          )}
+          {selectedDept !== "ALL" && (
+            <button
+              type="button"
+              className="filter-chip"
+              onClick={() => setSelectedDept("ALL")}
+            >
+              Department: {selectedDept} <X size={12} />
+            </button>
+          )}
+          {selectedLevel !== "ALL" && (
+            <button
+              type="button"
+              className="filter-chip"
+              onClick={() => setSelectedLevel("ALL")}
+            >
+              Level: {selectedLevel} <X size={12} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="filter-chip-clear"
+            onClick={() => {
+              setSearchQuery("");
+              setSelectedDept("ALL");
+              setSelectedLevel("ALL");
+            }}
+          >
+            <RotateCcw size={12} /> Clear all
+          </button>
+        </div>
+      )}
 
       {/* Two-Column Architectural Wireframe: Sidebar Filters + Main Directory */}
       <div className="directory-layout">

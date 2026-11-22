@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
+  Copy,
   Edit3,
   ExternalLink,
   Eye,
@@ -28,6 +29,7 @@ import {
   MaterialTypeBadge,
   RequestStatusBadge,
 } from "../components/Badge";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { Modal } from "../components/Modal";
 import { useToast } from "../components/ToastContext";
 import {
@@ -53,6 +55,23 @@ export function CourseDetailPage() {
   const { showToast } = useToast();
 
   const [course, setCourse] = useState<Course | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    kind: "contribution" | "request";
+    title: string;
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  const handleCopyResourceUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Resource link copied to clipboard.", "success");
+    } catch {
+      showToast("Could not copy automatically — use Open Resource to access the link.", "error");
+    }
+  };
+
+
   const [loadingCourse, setLoadingCourse] = useState<boolean>(true);
   const [courseError, setCourseError] = useState<string | null>(null);
 
@@ -560,14 +579,24 @@ export function CourseDetailPage() {
                     <span className="external-link-notice">
                       <ShieldAlert size={13} /> External resource link
                     </span>
-                    <a
-                      href={mat.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary btn-sm"
-                    >
-                      Open Resource <ExternalLink size={14} />
-                    </a>
+                    <div style={{ display: "inline-flex", gap: "0.45rem", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => void handleCopyResourceUrl(mat.url)}
+                        title="Copy external resource URL"
+                      >
+                        <Copy size={13} /> Copy
+                      </button>
+                      <a
+                        href={mat.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary btn-sm"
+                      >
+                        Open Resource <ExternalLink size={14} />
+                      </a>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -689,21 +718,31 @@ export function CourseDetailPage() {
                         <button
                           type="button"
                           className="btn btn-danger btn-sm"
-                          onClick={() => void handleDeleteContribution(item)}
+                          onClick={() => setPendingDelete({ kind: "contribution", title: item.title, onConfirm: () => handleDeleteContribution(item) })}
                         >
                           <Trash2 size={13} />
                         </button>
                       )}
                     </div>
 
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary btn-sm"
-                    >
-                      Open Link <ExternalLink size={13} />
-                    </a>
+                    <div style={{ display: "inline-flex", gap: "0.45rem", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => void handleCopyResourceUrl(item.url)}
+                        title="Copy contribution URL"
+                      >
+                        <Copy size={13} /> Copy
+                      </button>
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary btn-sm"
+                      >
+                        Open Link <ExternalLink size={13} />
+                      </a>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -791,7 +830,7 @@ export function CourseDetailPage() {
                             <button
                               type="button"
                               className="btn btn-danger btn-sm"
-                              onClick={() => void handleDeleteContribution(item)}
+                              onClick={() => setPendingDelete({ kind: "contribution", title: item.title, onConfirm: () => handleDeleteContribution(item) })}
                             >
                               <Trash2 size={13} /> Delete
                             </button>
@@ -926,7 +965,7 @@ export function CourseDetailPage() {
                           <button
                             type="button"
                             className="btn btn-danger btn-sm"
-                            onClick={() => void handleDeleteRequest(req)}
+                            onClick={() => setPendingDelete({ kind: "request", title: req.title, onConfirm: () => handleDeleteRequest(req) })}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -1346,6 +1385,35 @@ export function CourseDetailPage() {
           </div>
         )}
       </Modal>
+
+      <ConfirmModal
+        isOpen={Boolean(pendingDelete)}
+        title={
+          pendingDelete?.kind === "contribution"
+            ? "Delete Contribution?"
+            : "Delete Material Request?"
+        }
+        message={
+          pendingDelete
+            ? `Are you sure you want to permanently remove "${pendingDelete.title}"? This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Yes, Delete"
+        cancelLabel="Cancel"
+        isDanger
+        isSubmitting={isDeleting}
+        onCancel={() => {
+          if (!isDeleting) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          setIsDeleting(true);
+          void pendingDelete.onConfirm().finally(() => {
+            setIsDeleting(false);
+            setPendingDelete(null);
+          });
+        }}
+      />
     </div>
   );
 }

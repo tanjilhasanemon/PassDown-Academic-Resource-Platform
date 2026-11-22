@@ -1,41 +1,41 @@
-&lt;div align=&quot;center&quot;&gt;
+<div align="center">
 
-&lt;img src=&quot;docs/logo.svg&quot; alt=&quot;PassDown Logo&quot; width=&quot;88&quot; height=&quot;88&quot; /&gt;
+<img src="docs/logo.svg" alt="PassDown Logo" width="88" height="88" />
 
 # PassDown
 ### Academic Course Archive & Peer Resource-Sharing Platform
 
 *Browse university courses without a login wall, discover admin-verified core materials, share moderated study notes, collaborate in permission-controlled study groups, and fulfill academic resource requests.*
 
-&lt;p&gt;
-  &lt;a href=&quot;https://passdown-academic-resource-platform.vercel.app/&quot;&gt;&lt;img src=&quot;https://img.shields.io/badge/Live%20App-Vercel%20Services-0F5338?style=for-the-badge&amp;logo=vercel&amp;logoColor=white&quot; alt=&quot;Live App&quot; /&gt;&lt;/a&gt;
-  &lt;a href=&quot;https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/actions/workflows/ci.yml&quot;&gt;&lt;img src=&quot;https://img.shields.io/github/actions/workflow/status/tanjilhasanemon/PassDown-Academic-Resource-Platform/ci.yml?branch=main&amp;style=for-the-badge&amp;label=CI%20Pipeline&quot; alt=&quot;CI Pipeline&quot; /&gt;&lt;/a&gt;
-  &lt;a href=&quot;https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/actions/workflows/codeql.yml&quot;&gt;&lt;img src=&quot;https://img.shields.io/github/actions/workflow/status/tanjilhasanemon/PassDown-Academic-Resource-Platform/codeql.yml?branch=main&amp;style=for-the-badge&amp;label=CodeQL&quot; alt=&quot;CodeQL&quot; /&gt;&lt;/a&gt;
-  &lt;img src=&quot;https://www.google.com/search?q=https://img.shields.io/badge/Docstrings-100%2525%2520(349%252F349)-0F5338%3Fstyle%3Dfor-the-badge&quot; alt=&quot;100% Docstrings&quot; /&gt;
-  &lt;img src=&quot;https://img.shields.io/badge/Tests-21%20Passed-1E3A5F?style=for-the-badge&amp;logo=pytest&amp;logoColor=white&quot; alt=&quot;Pytest&quot; /&gt;
-&lt;/p&gt;
+<p>
+  <a href="https://passdown-academic-resource-platform.vercel.app/"><img src="https://img.shields.io/badge/Live%20App-Vercel%20Services-0F5338?style=for-the-badge&logo=vercel&logoColor=white" alt="Live App" /></a>
+  <a href="https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanjilhasanemon/PassDown-Academic-Resource-Platform/ci.yml?branch=main&style=for-the-badge&label=CI%20Pipeline" alt="CI Pipeline" /></a>
+  <a href="https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/actions/workflows/codeql.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanjilhasanemon/PassDown-Academic-Resource-Platform/codeql.yml?branch=main&style=for-the-badge&label=CodeQL" alt="CodeQL" /></a>
+  <img src="https://img.shields.io/badge/Docstrings-100%25%20(349%2F349)-0F5338?style=for-the-badge" alt="100% Docstrings" />
+  <img src="https://img.shields.io/badge/Tests-21%20Passed-1E3A5F?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest" />
+</p>
 
-&lt;p&gt;
-  &lt;img src=&quot;https://img.shields.io/badge/FastAPI-0.141+-009688?style=flat-square&amp;logo=fastapi&amp;logoColor=white&quot; alt=&quot;FastAPI&quot; /&gt;
-  &lt;img src=&quot;https://img.shields.io/badge/React-19-61DAFB?style=flat-square&amp;logo=react&amp;logoColor=black&quot; alt=&quot;React 19&quot; /&gt;
-  &lt;img src=&quot;https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white&quot; alt=&quot;TypeScript&quot; /&gt;
-  &lt;img src=&quot;https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&amp;logo=vite&amp;logoColor=white&quot; alt=&quot;Vite 8&quot; /&gt;
-  &lt;img src=&quot;https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat-square&quot; alt=&quot;SQLAlchemy 2.0&quot; /&gt;
-  &lt;img src=&quot;https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&amp;logo=supabase&amp;logoColor=white&quot; alt=&quot;Supabase&quot; /&gt;
-  &lt;img src=&quot;https://img.shields.io/badge/License-MIT-gray?style=flat-square&quot; alt=&quot;MIT License&quot; /&gt;
-&lt;/p&gt;
+<p>
+  <img src="https://img.shields.io/badge/FastAPI-0.141+-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 8" />
+  <img src="https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat-square" alt="SQLAlchemy 2.0" />
+  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/License-MIT-gray?style=flat-square" alt="MIT License" />
+</p>
 
-&lt;p&gt;
-  &lt;a href=&quot;https://passdown-academic-resource-platform.vercel.app/&quot;&gt;&lt;strong&gt;🚀 Live Deployment&lt;/strong&gt;&lt;/a&gt;
-  &amp;nbsp;·&amp;nbsp;
-  &lt;a href=&quot;https://www.google.com/search?q=https://passdown-academic-resource-platform.vercel.app/api/docs&quot;&gt;&lt;strong&gt;📘 OpenAPI Swagger Docs&lt;/strong&gt;&lt;/a&gt;
-  &amp;nbsp;·&amp;nbsp;
-  &lt;a href=&quot;https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki&quot;&gt;&lt;strong&gt;📚 12-Section GitHub Wiki&lt;/strong&gt;&lt;/a&gt;
-  &amp;nbsp;·&amp;nbsp;
-  &lt;a href=&quot;https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/issues&quot;&gt;&lt;strong&gt;🐞 Issues &amp;amp; Feedback&lt;/strong&gt;&lt;/a&gt;
-&lt;/p&gt;
+<p>
+  <a href="https://passdown-academic-resource-platform.vercel.app/"><strong>🚀 Live Deployment</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://passdown-academic-resource-platform.vercel.app/api/docs"><strong>📘 OpenAPI Swagger Docs</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki"><strong>📚 12-Section GitHub Wiki</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/issues"><strong>🐞 Issues &amp; Feedback</strong></a>
+</p>
 
-&lt;/div&gt;
+</div>
 
 ---
 
@@ -96,18 +96,18 @@ Every push to `main` automatically runs **4 GitHub Actions & CodeQL workflows**:
 
 | # | Section | Wiki Page |
 |---:|---|---|
-| 01 | Software Requirements Specification (SRS v2.0) | [01-Software-Requirements-Specification](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/01-Software-Requirements-Specification) |
-| 02 | Software Design Specification (SDS v2.0) | [02-Software-Design-Specification](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/02-Software-Design-Specification) |
-| 03 | Evidence of Trello and Discord Usage | [03-Trello-and-Discord-Usage](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/03-Trello-and-Discord-Usage) |
-| 04 | Architectural Pattern (ECB & Layered Design) | [04-Architectural-Pattern-ECB](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/04-Architectural-Pattern-ECB) |
-| 05 | Coding Standards and Guidelines | [05-Coding-Standards-and-Guidelines](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/05-Coding-Standards-and-Guidelines) |
-| 06 | Source Code Documentation Tools (Sphinx & TypeDoc) | [06-Source-Code-Documentation-Tools](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/06-Source-Code-Documentation-Tools) |
-| 07 | UI Design (Swiss Academic Archive) | [07-UI-Design](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/07-UI-Design) |
-| 08 | Nielsen's 10 Usability Heuristics Evaluation | [08-Nielsens-Usability-Heuristics](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/08-Nielsens-Usability-Heuristics) |
-| 09 | Code Review Tools and Findings | [09-Code-Review-Tools-and-Findings](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/09-Code-Review-Tools-and-Findings) |
-| 10 | Evidence of Usage of Git and CI/CD | [10-Evidence-of-Git-and-CI-Usage](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/10-Evidence-of-Git-and-CI-Usage) |
-| 11 | Unit Testing — Test Coverage and Quality | [11-Unit-Testing-Coverage-and-Quality](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/11-Unit-Testing-Coverage-and-Quality) |
-| 12 | Individual Team Member Contributions | [12-Individual-Team-Member-Contributions](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/12-Individual-Team-Member-Contributions) |
+| 01 | Software Requirements Specification (SRS v2.0) | [01-Software-Requirements-Specification](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/01-Software-Requirements-Specification) |
+| 02 | Software Design Specification (SDS v2.0) | [02-Software-Design-Specification](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/02-Software-Design-Specification) |
+| 03 | Evidence of Trello and Discord Usage | [03-Trello-and-Discord-Usage](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/03-Trello-and-Discord-Usage) |
+| 04 | Architectural Pattern (ECB & Layered Design) | [04-Architectural-Pattern-ECB](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/04-Architectural-Pattern-ECB) |
+| 05 | Coding Standards and Guidelines | [05-Coding-Standards-and-Guidelines](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/05-Coding-Standards-and-Guidelines) |
+| 06 | Source Code Documentation Tools (Sphinx & TypeDoc) | [06-Source-Code-Documentation-Tools](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/06-Source-Code-Documentation-Tools) |
+| 07 | UI Design (Swiss Academic Archive) | [07-UI-Design](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/07-UI-Design) |
+| 08 | Nielsen's 10 Usability Heuristics Evaluation | [08-Nielsens-Usability-Heuristics](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/08-Nielsens-Usability-Heuristics) |
+| 09 | Code Review Tools and Findings | [09-Code-Review-Tools-and-Findings](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/09-Code-Review-Tools-and-Findings) |
+| 10 | Evidence of Usage of Git and CI/CD | [10-Evidence-of-Git-and-CI-Usage](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/10-Evidence-of-Git-and-CI-Usage) |
+| 11 | Unit Testing — Test Coverage and Quality | [11-Unit-Testing-Coverage-and-Quality](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/11-Unit-Testing-Coverage-and-Quality) |
+| 12 | Individual Team Member Contributions | [12-Individual-Team-Member-Contributions](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/12-Individual-Team-Member-Contributions) |
 
 ---
 
@@ -171,6 +171,6 @@ PassDown deploys as a single unified **Vercel Services** project via root `verce
 
 ---
 
-&lt;div align=&quot;center&quot;&gt;
-  &lt;sub&gt;Built with care for Independent University, Bangladesh (IUB) · CSE 451 Software Engineering · MIT License&lt;/sub&gt;
-&lt;/div&gt;
+<div align="center">
+  <sub>Built with care for Independent University, Bangladesh (IUB) · CSE 451 Software Engineering · MIT License</sub>
+</div>

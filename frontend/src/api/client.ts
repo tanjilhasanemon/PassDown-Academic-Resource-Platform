@@ -145,13 +145,20 @@ apiClient.interceptors.response.use(
   }
 );
 
+/**
+ * Converts API or network failures into plain-language diagnostic messages
+ * with actionable recovery steps (Nielsen Heuristic H9).
+ *
+ * @param error - Unknown thrown error from Axios or runtime code.
+ * @returns Clear, user-friendly explanation without raw HTTP status jargon.
+ */
 export function extractErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as
       | { detail?: string | Array<{ loc?: (string | number)[]; msg?: string }> }
       | undefined;
 
-    if (typeof data?.detail === "string") {
+    if (typeof data?.detail === "string" && data.detail.trim().length > 0) {
       return data.detail;
     }
 
@@ -161,16 +168,38 @@ export function extractErrorMessage(error: unknown): string {
           const field = err.loc?.[err.loc.length - 1];
           const cleanMsg = (err.msg ?? "Invalid value").replace(
             /^Value error,\s*/i,
-            ""
+            "",
           );
           return field ? `${String(field)}: ${cleanMsg}` : cleanMsg;
         })
         .join(" • ");
     }
 
-    if (error.message) {
-      return error.message;
+    const status = error.response?.status;
+    if (status === 401) {
+      return "Your session has expired or credentials are invalid. Please sign in again.";
+    }
+    if (status === 403) {
+      return "You do not have permission to perform this action. Sign in with an authorized account.";
+    }
+    if (status === 404) {
+      return "The requested course or resource could not be found. It may have been removed.";
+    }
+    if (status === 409) {
+      return "This item already exists or conflicts with an existing record. Please review and try again.";
+    }
+    if (status === 422) {
+      return "Some fields are invalid or incomplete. Check highlighted values and try again.";
+    }
+    if (status === 423) {
+      return "This account is temporarily locked after repeated failed attempts. Wait 15 minutes or contact an Admin.";
+    }
+    if (status && status >= 500) {
+      return "The PassDown server ran into a temporary issue. Please wait a moment and click Retry.";
+    }
+    if (error.code === "ERR_NETWORK" || !error.response) {
+      return "Unable to reach the PassDown server. Check your internet connection and click Retry.";
     }
   }
-  return error instanceof Error ? error.message : "An unexpected error occurred";
+  return "Something unexpected happened. Please refresh or try again.";
 }

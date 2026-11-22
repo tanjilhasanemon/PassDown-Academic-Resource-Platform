@@ -8,6 +8,7 @@ import {
   ExternalLink,
   FolderKanban,
   GraduationCap,
+  HelpCircle,
   Info,
   LayoutDashboard,
   LogIn,
@@ -20,6 +21,8 @@ import {
 } from "lucide-react";
 import { contributionsApi } from "../api/contributions";
 import { useAuth } from "../auth/AuthContext";
+import { Breadcrumbs } from "./Breadcrumbs";
+import { HelpShortcutsModal } from "./HelpShortcutsModal";
 import { TopLoadingBar } from "./TopLoadingBar";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -30,6 +33,22 @@ export function Layout({ children }: { children: ReactNode }) {
   });
   const [apiOnline, setApiOnline] = useState<boolean>(true);
   const [pendingCount, setPendingCount] = useState<number>(0);
+  const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleGlobalKey = (event: KeyboardEvent) => {
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+        return;
+      }
+      if (event.key === "?") {
+        event.preventDefault();
+        setIsHelpOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKey);
+    return () => window.removeEventListener("keydown", handleGlobalKey);
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -207,6 +226,16 @@ export function Layout({ children }: { children: ReactNode }) {
             <button
               type="button"
               className="btn-icon"
+              onClick={() => setIsHelpOpen(true)}
+              aria-label="Open quick help and keyboard shortcuts"
+              title="Quick Help & Shortcuts (?)"
+            >
+              <HelpCircle size={15} />
+            </button>
+
+            <button
+              type="button"
+              className="btn-icon"
               onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
               aria-label="Toggle color theme"
               title="Switch Archival Light / Graphite Dark Mode"
@@ -218,6 +247,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="main-container" style={{ flex: 1 }}>
+        <Breadcrumbs />
         {children}
       </main>
 
@@ -234,6 +264,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <span>Tanjil Hasan Emon (ID: 2331024)</span>
         </div>
       </footer>
+      <HelpShortcutsModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     </div>
   );
 }

@@ -70,7 +70,7 @@ def generate_refresh_token() -> str:
 
 
 def hash_refresh_token(raw_token: str) -> str:
-    """Store only the SHA-256 digest of refresh tokens in the database."""
+    """Compute a keyed HMAC-SHA256 digest of a refresh token for database storage."""
     return hmac.new(settings.jwt_secret.encode("utf-8"), raw_token.encode("utf-8"), hashlib.sha256).hexdigest()
 
 

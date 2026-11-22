@@ -9,7 +9,7 @@
 
 ## Security Measures in PassDown
 
-PassDown is designed with layered security controls documented in [`docs/02-srs.md`](./docs/02-srs.md) and [`docs/03-tdd.md`](./docs/03-tdd.md):
+PassDown is designed with layered security controls documented in [`GitHub Wiki (01-Software-Requirements-Specification)`](./GitHub Wiki (01-Software-Requirements-Specification)) and [`GitHub Wiki (02-Software-Design-Specification)`](./GitHub Wiki (02-Software-Design-Specification)):
 
 - **SQL Injection Prevention (`NFR-03`)**: All database queries use SQLAlchemy 2.0 ORM with bound parameters; raw string-concatenated SQL is strictly prohibited.
 - **Malicious Link Protection (`NFR-04`)**: Pydantic v2 schemas validate that all submitted material and contribution URLs use `http://` or `https://` schemes (`javascript:` and `data:` URIs are rejected with `422 Unprocessable Entity`), and all external links render with `target="_blank"` and `rel="noopener noreferrer"`.

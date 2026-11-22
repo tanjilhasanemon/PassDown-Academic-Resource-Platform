@@ -1,84 +1,176 @@
-# PassDown — Academic Course Archive & Resource-Sharing Platform
+&lt;div align=&quot;center&quot;&gt;
 
-> *"Browse university courses, share peer-verified study materials, collaborate in study groups, and fulfill academic resource requests."*
+&lt;img src=&quot;docs/logo.svg&quot; alt=&quot;PassDown Logo&quot; width=&quot;88&quot; height=&quot;88&quot; /&gt;
 
-**Course:** CSE 451 — Software Engineering  
-**Institution:** Department of Computer Science & Engineering, Independent University, Bangladesh (IUB)  
-**Repository:** [https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform](https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform)
+# PassDown
+### Academic Course Archive & Peer Resource-Sharing Platform
 
-## 1. Platform Features
+*Browse university courses without a login wall, discover admin-verified core materials, share moderated study notes, collaborate in permission-controlled study groups, and fulfill academic resource requests.*
 
-* **Course Catalog & Directory:** Browse and search offered IUB courses by code or title, filter by department (`CSE`, `MAT`, `BBA`, `PHY`, `ENG`) and course level (`100`–`400`), sort dynamically, and switch between Card Grid and Table views.
-* **Curated Core Materials & Community Contributions:** Access official admin-curated slides, notes, past papers, and reference books alongside peer-submitted contributions moderated through an Admin approval workflow (`pending -> approved / rejected`).
-* **Course Resource Requests:** Post open requests for missing study materials and track fulfillment (`open -> fulfilled`).
-* **Collaborative Study Groups:** Create course-linked study groups with fine-grained per-member permissions (`can_create`, `can_edit`, `can_assign`) and shared resource boards.
-* **Stateless Security, Refresh Rotation & Audit Hub:** Argon2id password hashing with server-side pepper, 15-minute JWT access tokens, 7-day rotating refresh tokens with server-side session revocation, account lockout protection, and an Admin Hub with User Management, Activity Audit Logs (CSV export & purge), and Security Overview.
-* **Swiss Academic Archive UI:** Full-viewport editorial design system with Warm Archival Stone light theme (`#f5f4f0`) and Carbon dark theme (`#0b0c0e`), Forest Emerald accents (`#0f5338`), `Plus Jakarta Sans` + `JetBrains Mono` typography, and live network status indicator.
+&lt;p&gt;
+  &lt;a href=&quot;https://passdown-academic-resource-platform.vercel.app/&quot;&gt;&lt;img src=&quot;https://img.shields.io/badge/Live%20App-Vercel%20Services-0F5338?style=for-the-badge&amp;logo=vercel&amp;logoColor=white&quot; alt=&quot;Live App&quot; /&gt;&lt;/a&gt;
+  &lt;a href=&quot;https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/actions/workflows/ci.yml&quot;&gt;&lt;img src=&quot;https://img.shields.io/github/actions/workflow/status/tanjilhasanemon/PassDown-Academic-Resource-Platform/ci.yml?branch=main&amp;style=for-the-badge&amp;label=CI%20Pipeline&quot; alt=&quot;CI Pipeline&quot; /&gt;&lt;/a&gt;
+  &lt;a href=&quot;https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/actions/workflows/codeql.yml&quot;&gt;&lt;img src=&quot;https://img.shields.io/github/actions/workflow/status/tanjilhasanemon/PassDown-Academic-Resource-Platform/codeql.yml?branch=main&amp;style=for-the-badge&amp;label=CodeQL&quot; alt=&quot;CodeQL&quot; /&gt;&lt;/a&gt;
+  &lt;img src=&quot;https://www.google.com/search?q=https://img.shields.io/badge/Docstrings-100%2525%2520(349%252F349)-0F5338%3Fstyle%3Dfor-the-badge&quot; alt=&quot;100% Docstrings&quot; /&gt;
+  &lt;img src=&quot;https://img.shields.io/badge/Tests-21%20Passed-1E3A5F?style=for-the-badge&amp;logo=pytest&amp;logoColor=white&quot; alt=&quot;Pytest&quot; /&gt;
+&lt;/p&gt;
 
-## 2. Architectural Pattern (Entity–Control–Boundary / Layered Design)
+&lt;p&gt;
+  &lt;img src=&quot;https://img.shields.io/badge/FastAPI-0.141+-009688?style=flat-square&amp;logo=fastapi&amp;logoColor=white&quot; alt=&quot;FastAPI&quot; /&gt;
+  &lt;img src=&quot;https://img.shields.io/badge/React-19-61DAFB?style=flat-square&amp;logo=react&amp;logoColor=black&quot; alt=&quot;React 19&quot; /&gt;
+  &lt;img src=&quot;https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white&quot; alt=&quot;TypeScript&quot; /&gt;
+  &lt;img src=&quot;https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&amp;logo=vite&amp;logoColor=white&quot; alt=&quot;Vite 8&quot; /&gt;
+  &lt;img src=&quot;https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat-square&quot; alt=&quot;SQLAlchemy 2.0&quot; /&gt;
+  &lt;img src=&quot;https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&amp;logo=supabase&amp;logoColor=white&quot; alt=&quot;Supabase&quot; /&gt;
+  &lt;img src=&quot;https://img.shields.io/badge/License-MIT-gray?style=flat-square&quot; alt=&quot;MIT License&quot; /&gt;
+&lt;/p&gt;
 
-| Layer | Directory / Stack | Responsibility |
-| :--- | :--- | :--- |
-| **Boundary Layer (Frontend)** | `frontend/src/` (React 19, TypeScript, Vite 8, React Router, Axios, Lucide) | Renders the Swiss Academic Archive SPA, manages authentication state, and communicates with `/api/v1`. |
-| **Boundary Layer (Backend HTTP)** | `backend/api/v1/` & `backend/schemas/` (FastAPI + Pydantic v2) | Validates HTTP requests, enforces JWT/RBAC dependencies, and serializes public-safe JSON responses. |
-| **Control Layer (Business Logic)** | `backend/services/` & `backend/core/` | Enforces ownership checks, moderation transitions, Argon2id/JWT security, RBAC rules, and audit logging. |
-| **Entity Layer (Persistence)** | `backend/models/` & `backend/repositories/` (SQLAlchemy 2.0 + Alembic) | Maps relational entities (`AppUser`, `Course`, `CoreMaterial`, `Contribution`, `MaterialRequest`, `StudyGroup`, `UserSession`, `AuditLog`) on PostgreSQL (Supabase) / SQLite. |
+&lt;p&gt;
+  &lt;a href=&quot;https://passdown-academic-resource-platform.vercel.app/&quot;&gt;&lt;strong&gt;🚀 Live Deployment&lt;/strong&gt;&lt;/a&gt;
+  &amp;nbsp;·&amp;nbsp;
+  &lt;a href=&quot;https://www.google.com/search?q=https://passdown-academic-resource-platform.vercel.app/api/docs&quot;&gt;&lt;strong&gt;📘 OpenAPI Swagger Docs&lt;/strong&gt;&lt;/a&gt;
+  &amp;nbsp;·&amp;nbsp;
+  &lt;a href=&quot;https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki&quot;&gt;&lt;strong&gt;📚 12-Section GitHub Wiki&lt;/strong&gt;&lt;/a&gt;
+  &amp;nbsp;·&amp;nbsp;
+  &lt;a href=&quot;https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/issues&quot;&gt;&lt;strong&gt;🐞 Issues &amp;amp; Feedback&lt;/strong&gt;&lt;/a&gt;
+&lt;/p&gt;
 
-## 3. Quality Gates, Testing & Documentation Tools
+&lt;/div&gt;
 
-* **Coding Standards & Static Analysis:** Ruff (`--select E9,F`), Bandit security scanning (`-ll`), TypeScript strict compiler (`tsc --noEmit`), and GitHub CodeQL (`.github/workflows/codeql.yml`).
-* **Automated Testing (`Pytest`):** Unit, security/RBAC, API integration, and 100.0% docstring coverage suites (`backend/tests/`).
-* **Source Code Documentation:** Sphinx (`docs/source/` with `autodoc` + `napoleon` Google-style docstrings) for Python and TypeDoc (`frontend/typedoc.json`) for TypeScript, plus live OpenAPI Swagger UI (`/api/docs`).
-* **Continuous Integration:** Automated GitHub Actions pipeline (`.github/workflows/ci.yml`) running on every push and pull request.
+---
 
-## 4. Team Members (CSE 451, IUB)
+## 📌 Academic Context
 
-| Member | Name | Student ID | Primary Focus |
-| :--- | :--- | :--- | :--- |
-| **Member 1 (Team Lead)** | Tanjil Hasan Emon | `2331024` | Authentication, RBAC/JWT Security, CI/CD, Cloud Deployment, Documentation |
-| **Member 2** | Tanjil Sarkar | `2312026` | Course Catalog, Search & Filtering, Core Materials Management |
-| **Member 3** | Md Jawad Abdullah | `2230325` | Community Contributions, Moderation Workflow, Resource Requests |
-| **Member 4** | S M Mashraful Islam | `2230836` | Collaborative Study Groups, Admin Hub, Audit Logs & UI Polish |
+* **Course:** `CSE 451` — Software Engineering
+* **Institution:** Department of Computer Science & Engineering, **Independent University, Bangladesh (IUB)**
+* **Architecture:** Entity–Control–Boundary (**ECB**) & Strict 4-Tier Layered Design
+* **UI System:** **Swiss Academic Archive** (Light Archival Stone & Carbon Dark Themes — engineered for Jakob Nielsen's 10 Usability Heuristics)
 
-## 5. Local Development Setup
+---
 
-### Backend (FastAPI + SQLAlchemy)
+## ✨ Key Platform Capabilities
 
+| Capability | Description |
+|---|---|
+| **Public Course Directory (`FR-03`)** | Browse 11+ seeded IUB courses across 5 departments (`CSE`, `MAT`, `BBA`, `PHY`, `ENG`) with instant `?q=` search (`/` shortcut), department/level (`100`–`400`) filters, removable Active Filter Chips, and Grid/Table toggle. |
+| **Core Materials & Moderated Contributions (`FR-05`–`FR-09`)** | Separates admin-curated **Core Materials** from student **Contributions** (`pending -> approved \| rejected`) with one-click **Copy Link**, strict `http(s)://` validation, and owner-only pending edit/withdrawal. |
+| **Material Requests (`FR-10`–`FR-12`)** | Structured board for missing course resources or new-course proposals (`open -> fulfilled`) with owner/admin fulfillment controls. |
+| **Collaborative Study Groups (`FR-12`)** | Course-linked group workspaces enforcing granular per-member permissions (`can_create`, `can_edit`, `can_assign`) and shared resource boards. |
+| **Defense-in-Depth Security (`FR-01`–`FR-02`)** | **Argon2id** password hashing + server-side pepper, **15-minute HS256 JWT** access tokens, **7-day rotating `HMAC-SHA256` refresh tokens** (`user_session`), 5-attempt account lockout, and active device session revocation. |
+| **Admin Governance & Audit Hub** | Pending moderation queue, Course/Material CRUD, User search/ban/role/unlock (with self-demotion protection), Security Overview, and CSV-exportable Activity Audit Logs. |
+| **Nielsen's 10 Usability Heuristics** | Persistent Breadcrumbs (`H3`), Quick Orientation Strip (`H6`/`H10`), styled `ConfirmModal` delete guards (`H5`), plain-language error recovery (`H9`), and a global `?` Quick Help & Keyboard Shortcuts modal (`H7`/`H10`). |
+
+---
+
+## 🏛️ Architecture — Entity–Control–Boundary (ECB)
+
+```mermaid
+flowchart LR
+    UI["Boundary (UI)<br/>React 19 · TypeScript · Vite 8"] -->|HTTPS + Bearer JWT| API["Boundary (HTTP)<br/>FastAPI Routers · Pydantic v2"]
+    API --> CTRL["Control Layer<br/>Services · Argon2id/JWT/HMAC · RBAC · Audit"]
+    CTRL --> REPO["Entity Layer<br/>Repositories · SQLAlchemy 2.0 ORM"]
+    REPO --> DB[("Supabase PostgreSQL<br/>(Session Pooler / SQLite CI)")]
+```
+
+| ECB Layer | Directory | Core Technologies |
+|---|---|---|
+| **Boundary (Presentation)** | `frontend/src/` | React 19, TypeScript 7, Vite 8, React Router 7, Axios, Lucide React |
+| **Boundary (HTTP & DTOs)** | `backend/api/v1/`, `backend/schemas/` | FastAPI, Pydantic v2, HTTP Security Headers Middleware |
+| **Control (Business & Security)** | `backend/services/`, `backend/core/`, `backend/dependencies/` | Argon2id (`argon2-cffi`), PyJWT, Keyed `HMAC-SHA256`, OAuth2 Scopes |
+| **Entity (Persistence)** | `backend/models/`, `backend/repositories/`, `backend/alembic/` | SQLAlchemy 2.0, `psycopg[binary]`, Alembic, Supabase PostgreSQL |
+
+---
+
+## 🛡️ Automated Quality, Security & Documentation Gates
+
+Every push to `main` automatically runs **4 GitHub Actions & CodeQL workflows**:
+
+* **Linting & Static Analysis:** `Ruff` (`--select E9,F`) and `TypeScript Strict` (`tsc && vite build`) — **0 errors**.
+* **Security Scanning:** `Bandit` (`-ll`) and **GitHub CodeQL** (Python + JavaScript/TypeScript) — **0 open alerts**.
+* **Automated Testing:** `Pytest` + `pytest-cov` (**21 automated tests** spanning normal, boundary, invalid `422`, RBAC `401`/`403`, and exceptional cases).
+* **Source Code Documentation:** **Sphinx** (`349/349` = `100.0%` Google-style docstrings verified in CI), **TypeDoc** (`frontend/typedoc.json`), and live **OpenAPI Swagger UI** (`/api/docs`).
+
+---
+
+## 📚 CSE 451 Documentation Hub (12-Section GitHub Wiki)
+
+| # | Section | Wiki Page |
+|---:|---|---|
+| 01 | Software Requirements Specification (SRS v2.0) | [01-Software-Requirements-Specification](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/01-Software-Requirements-Specification) |
+| 02 | Software Design Specification (SDS v2.0) | [02-Software-Design-Specification](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/02-Software-Design-Specification) |
+| 03 | Evidence of Trello and Discord Usage | [03-Trello-and-Discord-Usage](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/03-Trello-and-Discord-Usage) |
+| 04 | Architectural Pattern (ECB & Layered Design) | [04-Architectural-Pattern-ECB](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/04-Architectural-Pattern-ECB) |
+| 05 | Coding Standards and Guidelines | [05-Coding-Standards-and-Guidelines](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/05-Coding-Standards-and-Guidelines) |
+| 06 | Source Code Documentation Tools (Sphinx & TypeDoc) | [06-Source-Code-Documentation-Tools](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/06-Source-Code-Documentation-Tools) |
+| 07 | UI Design (Swiss Academic Archive) | [07-UI-Design](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/07-UI-Design) |
+| 08 | Nielsen's 10 Usability Heuristics Evaluation | [08-Nielsens-Usability-Heuristics](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/08-Nielsens-Usability-Heuristics) |
+| 09 | Code Review Tools and Findings | [09-Code-Review-Tools-and-Findings](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/09-Code-Review-Tools-and-Findings) |
+| 10 | Evidence of Usage of Git and CI/CD | [10-Evidence-of-Git-and-CI-Usage](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/10-Evidence-of-Git-and-CI-Usage) |
+| 11 | Unit Testing — Test Coverage and Quality | [11-Unit-Testing-Coverage-and-Quality](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/11-Unit-Testing-Coverage-and-Quality) |
+| 12 | Individual Team Member Contributions | [12-Individual-Team-Member-Contributions](https://www.google.com/search?q=https://github.com/tanjilhasanemon/PassDown-Academic-Resource-Platform/wiki/12-Individual-Team-Member-Contributions) |
+
+---
+
+## 🔑 Pre-Seeded Demo Accounts
+
+| Role | Email | Password | Scope |
+|---|---|---|---|
+| **Admin** | `admin@passdown.edu` | `Admin1234` | Full Course/Material CRUD, Moderation, User Mgmt, Audit Logs |
+| **Student** | `student@passdown.edu` | `Student1234` | Profile/Sessions, Contributions, Requests, Study Group Owner |
+| **Student (Limited Group Perms)** | `student3@passdown.edu` | `Student1234` | Demonstrates `can_assign=True`, `can_create=False` RBAC boundary |
+
+---
+
+## 💻 Local Development Setup
+
+### 1. Backend (FastAPI + SQLAlchemy)
 ```powershell
 cd backend
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --only-binary=:all: -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pip install --only-binary=:all: -r requirements-dev.txt
 
-# Run Code Review Tools, Full Pytest Suite & Sphinx Docs
-python -m ruff check --select E9,F .
-python -m bandit -r api core dependencies models repositories schemas services main.py -ll
-python -m pytest -v --cov=. --cov-report=term-missing --cov-report=html
-sphinx-build -b html ../docs/source ../docs/build/html
+# Run Quality Gates, 21 Pytest Tests & Sphinx Docs
+.\.venv\Scripts\python.exe -m ruff check --select E9,F .
+.\.venv\Scripts\python.exe -m bandit -r api core dependencies models repositories schemas services main.py -ll
+$env:PYTHONPATH="."; .\.venv\Scripts\python.exe -m pytest -v --cov=. --cov-report=term-missing --cov-report=html
+.\.venv\Scripts\python.exe -m sphinx -b html ../docs/source ../docs/build/html
 
-# Start Backend Server (http://127.0.0.1:8000/api/docs)
-python -m uvicorn main:app --reload --port 8000
+# Start Development Server (http://127.0.0.1:8000/api/docs)
+.\.venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000
 ```
 
-### Frontend (React + TypeScript + Vite)
-
+### 2. Frontend (React 19 + TypeScript + Vite 8)
 ```powershell
 cd frontend
-npm install
-npm run typecheck
-npm run build
-npm run dev
+npm.cmd install
+npm.cmd run typecheck
+npm.cmd run build
+npm.cmd run docs
+npm.cmd run dev
 ```
 
-* **Frontend URL:** `http://localhost:5173`
-* **Pre-Seeded Demo Credentials:**
-  * **Admin:** `admin@passdown.edu` / `Admin1234` (also `admin2@passdown.edu`)
-  * **Student:** `student@passdown.edu` / `Student1234` (also `student2@passdown.edu`, `student3@passdown.edu`, `tanjil.emon@iub.edu.bd`)
+---
 
-## 6. Cloud Deployment (Vercel Services + Supabase PostgreSQL)
+## ☁️ Production Deployment (Vercel Services + Supabase)
 
-This repository includes a root `vercel.json` configured with **Vercel Services** to host both the FastAPI backend (`/api/*`) and the React/Vite frontend (`/*`) on a single domain:
+PassDown deploys as a single unified **Vercel Services** project via root `vercel.json` (`/api/*` → FastAPI `backend/main.py`, `/*` → Vite SPA):
+1. Import this repository in **Vercel** with **Root Directory = `./`** and **Application Preset = `Services`**.
+2. Set `DATABASE_URL` (Supabase IPv4 **Session Pooler** URI on port `5432`) and a 32+ character `JWT_SECRET` in **Environment Variables**.
+3. Deploy — tables and initial IUB seed data initialize idempotently on first boot.
 
-1. Import `PassDown-Academic-Resource-Platform` in [Vercel](https://vercel.com/new) with **Root Directory = `./`** and **Application Preset = `Services`**.
-2. Add your Supabase PostgreSQL **Session Pooler** URI as `DATABASE_URL` plus a 32+ character `JWT_SECRET` in **Environment Variables**.
-3. Click **Deploy** — both the SPA frontend and `/api/docs` Swagger UI go live on one URL and auto-seed the initial IUB catalog, demo users, and study groups on startup.
+---
+
+## 👥 Project Team (CSE 451 — IUB)
+
+| Role | Name | Student ID | Assigned Scope |
+|---|---|---|---|
+| **Team Lead (Member 1)** | Tanjil Hasan Emon (`THE`) | `2331024` | `FR-01`–`FR-03` · Auth, RBAC/JWT Security, CI/CD, Deployment & Architecture |
+| **Member 2** | Tanjil Sarkar (`TS`) | `2312026` | `FR-04`–`FR-06` · Course Catalog, Filtering, Core Materials & UI/UX Audits |
+| **Member 3** | Md Jawad Abdullah (`MJA`) | `2230325` | `FR-07`–`FR-09` · Community Contributions, Moderation Queue & Sphinx Docs |
+| **Member 4** | S M Mashraful Islam (`SMMI`) | `2230836` | `FR-10`–`FR-12` · Material Requests, Study Groups, Admin Audit & TypeDoc |
+
+---
+
+&lt;div align=&quot;center&quot;&gt;
+  &lt;sub&gt;Built with care for Independent University, Bangladesh (IUB) · CSE 451 Software Engineering · MIT License&lt;/sub&gt;
+&lt;/div&gt;

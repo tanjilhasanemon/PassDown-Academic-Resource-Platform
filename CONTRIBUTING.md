@@ -1,6 +1,6 @@
 # Contributing to PassDown
 
-Thank you for your interest in contributing to **PassDown**! This repository is developed for **CSE 309: Web Applications & Internet** at Independent University, Bangladesh (IUB) and follows professional open-source engineering standards.
+Thank you for your interest in contributing to **PassDown**! This repository is developed for **CSE 309: CSE 451 Software Engineering & Internet** at Independent University, Bangladesh (IUB) and follows professional open-source engineering standards.
 
 ## Development Workflow
 

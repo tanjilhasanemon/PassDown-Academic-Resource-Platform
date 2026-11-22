@@ -34,3 +34,7 @@ docs/frontend-docs/
 .idea/
 .DS_Store
 Thumbs.db
+
+docs/build/
+docs/frontend-docs/
+backend/htmlcov/
